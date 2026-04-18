@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="246" height="160" viewBox="0 0 246 160" fill="none">
+  <defs>
+    <linearGradient id="leaf-cluster-bg" x1="21" y1="18" x2="215" y2="142" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4FFD5"/>
+      <stop offset="1" stop-color="#E4F9A8"/>
+    </linearGradient>
+    <radialGradient id="leaf-cluster-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(122 80) rotate(90) scale(68 95)">
+      <stop stop-color="#F9FFD8" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#F9FFD8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="leaf-cluster-leaf-a" x1="90" y1="28" x2="114" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#718D43"/>
+      <stop offset="1" stop-color="#536A2F"/>
+    </linearGradient>
+    <linearGradient id="leaf-cluster-leaf-b" x1="118" y1="20" x2="144" y2="124" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#88A84E"/>
+      <stop offset="1" stop-color="#617A38"/>
+    </linearGradient>
+    <linearGradient id="leaf-cluster-leaf-c" x1="144" y1="26" x2="170" y2="122" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6C8642"/>
+      <stop offset="1" stop-color="#4D642E"/>
+    </linearGradient>
+  </defs>
+  <rect width="246" height="160" rx="16" fill="url(#leaf-cluster-bg)"/>
+  <ellipse cx="123" cy="80" rx="95" ry="70" fill="url(#leaf-cluster-glow)"/>
+  <g opacity=".97">
+    <path d="M87 119C81 107 80 88 83 72C87 51 95 34 109 22C119 43 121 64 116 89C113 106 103 118 87 119Z" fill="url(#leaf-cluster-leaf-a)"/>
+    <path d="M102 116C97 102 97 82 101 62C106 42 115 24 130 12C140 34 141 59 136 87C132 104 121 116 102 116Z" fill="url(#leaf-cluster-leaf-b)"/>
+    <path d="M124 121C118 109 117 90 120 72C124 48 133 31 149 18C159 38 161 63 157 91C154 108 143 120 124 121Z" fill="url(#leaf-cluster-leaf-c)"/>
+    <path d="M138 112C137 95 140 76 147 58C155 39 166 27 182 20C181 37 177 54 169 73C161 92 151 105 138 112Z" fill="#5D7436" opacity=".82"/>
+    <path d="M108 40C105 64 107 90 112 114" stroke="#AFCB72" stroke-width="1.8" stroke-linecap="round" opacity=".55"/>
+    <path d="M128 29C124 53 126 83 132 114" stroke="#BED984" stroke-width="1.8" stroke-linecap="round" opacity=".52"/>
+    <path d="M149 34C144 57 145 87 149 118" stroke="#B6D27C" stroke-width="1.7" stroke-linecap="round" opacity=".48"/>
+  </g>
+</svg>

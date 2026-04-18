@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="246" height="160" viewBox="0 0 246 160" fill="none">
+  <defs>
+    <linearGradient id="leaf-fern-bg" x1="24" y1="18" x2="220" y2="144" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5FFD8"/>
+      <stop offset="1" stop-color="#E5F7A8"/>
+    </linearGradient>
+    <radialGradient id="leaf-fern-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(126 82) rotate(90) scale(58 86)">
+      <stop stop-color="#FBFFDE"/>
+      <stop offset="1" stop-color="#FBFFDE" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="246" height="160" rx="16" fill="url(#leaf-fern-bg)"/>
+  <ellipse cx="126" cy="82" rx="84" ry="58" fill="url(#leaf-fern-glow)"/>
+  <g stroke="#6B8340" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M112 122C112 101 116 79 124 58C132 39 145 24 161 15" stroke-width="2.3"/>
+    <path d="M121 69C108 62 95 55 83 48" stroke-width="2"/>
+    <path d="M127 58C116 49 105 41 95 33" stroke-width="2"/>
+    <path d="M134 48C123 39 114 31 106 23" stroke-width="1.9"/>
+    <path d="M137 77C149 70 161 63 172 55" stroke-width="2"/>
+    <path d="M145 65C156 57 166 49 175 40" stroke-width="1.9"/>
+    <path d="M151 55C160 48 168 41 176 33" stroke-width="1.8"/>
+    <path d="M117 78C106 72 95 66 84 61" stroke-width="1.9"/>
+    <path d="M114 88C103 83 92 79 81 75" stroke-width="1.8"/>
+    <path d="M112 98C101 95 91 92 80 90" stroke-width="1.7"/>
+    <path d="M110 108C99 107 90 107 81 106" stroke-width="1.6"/>
+    <path d="M140 84C151 80 161 76 172 73" stroke-width="1.9"/>
+    <path d="M136 95C146 93 157 91 168 90" stroke-width="1.8"/>
+    <path d="M132 107C142 107 152 108 163 110" stroke-width="1.7"/>
+    <g stroke="#88A253" opacity=".9">
+      <path d="M87 47L80 39"/>
+      <path d="M96 52L88 44"/>
+      <path d="M105 57L98 49"/>
+      <path d="M98 34L92 28"/>
+      <path d="M107 41L100 34"/>
+      <path d="M115 48L108 41"/>
+      <path d="M172 56L179 48"/>
+      <path d="M162 61L169 54"/>
+      <path d="M153 66L160 60"/>
+      <path d="M175 41L181 35"/>
+      <path d="M166 49L173 42"/>
+      <path d="M157 57L164 49"/>
+      <path d="M84 61L77 56"/>
+      <path d="M95 66L88 61"/>
+      <path d="M105 72L98 67"/>
+      <path d="M81 75L73 72"/>
+      <path d="M92 79L84 76"/>
+      <path d="M103 83L95 81"/>
+      <path d="M80 90L72 89"/>
+      <path d="M91 92L83 91"/>
+      <path d="M102 95L94 94"/>
+      <path d="M172 73L180 70"/>
+      <path d="M161 76L169 73"/>
+      <path d="M151 80L159 77"/>
+      <path d="M168 90L176 90"/>
+      <path d="M157 91L165 91"/>
+      <path d="M146 93L154 93"/>
+      <path d="M163 110L171 112"/>
+      <path d="M152 108L160 110"/>
+      <path d="M142 107L150 108"/>
+    </g>
+  </g>
+</svg>

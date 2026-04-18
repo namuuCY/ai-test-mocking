@@ -1,0 +1,8 @@
+{
+  "name": "ai-test-mocking",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "check:web": "node --input-type=module -e \"import('./src/web/potion-engine.mjs'); import('./src/web/main.mjs')\""
+  }
+}
