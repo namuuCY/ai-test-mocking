@@ -552,17 +552,20 @@ function renderApp() {
   const pageMarkup = getRouteMarkup(state.route, resultsSummary);
   const isPotionRoute = state.route === "/games/potion";
   const isHomeRoute = state.route === "/";
-  const isFramelessRoute = isPotionRoute || isHomeRoute;
+  const isResultsRoute = state.route === "/results";
+  const isFramelessRoute = isPotionRoute || isHomeRoute || isResultsRoute;
 
   document.body.dataset.route = isPotionRoute
     ? "potion"
     : isHomeRoute
       ? "home"
-      : "default";
+      : isResultsRoute
+        ? "results"
+        : "default";
 
   if (isFramelessRoute) {
     rootElement.innerHTML = `
-      <div class="app-shell ${isPotionRoute ? "app-shell--potion" : "app-shell--home"}">
+      <div class="app-shell ${isPotionRoute ? "app-shell--potion" : isHomeRoute ? "app-shell--home" : "app-shell--results"}">
         ${pageMarkup}
       </div>
     `;
@@ -882,11 +885,7 @@ function renderPotionAnsweredFeedbackBody() {
 
 function renderPotionTimeoutOverlay() {
   const feedback = state.potion.feedback;
-  if (
-    state.potion.phase !== "checking" ||
-    !feedback ||
-    !feedback.timedOut
-  ) {
+  if (state.potion.phase !== "checking" || !feedback || !feedback.timedOut) {
     return "";
   }
 
@@ -1652,78 +1651,225 @@ function renderMetricCard(label, value) {
 }
 
 function renderResultsPage(resultsSummary) {
+  const latestResult = state.results[0] ?? null;
+  const bestResult = getBestPracticeResult(state.results);
+
   return `
-    <section class="results-page">
-      ${renderGameHeader("연습 기록", "Practice Result", "localStorage에 저장된 최근 기록 요약")}
-      <div class="results-page__actions">
-        <button class="secondary-button" data-action="clear-results">기록 초기화</button>
-      </div>
-      <div class="results-page__grid">
-        ${renderResultsCard("마법약 만들기", resultsSummary.potion, "potion")}
-        ${renderResultsCard("도형 순서 기억하기", resultsSummary.sequence, "sequence")}
-      </div>
-      <section class="results-table">
-        <h2>최근 저장 기록</h2>
-        ${
-          state.results.length > 0
-            ? `
-              <div class="record-list">
-                ${state.results.map((result) => renderRecordRow(result)).join("")}
+    <section class="results-stage">
+      <div class="results-stage__board">
+        <aside class="results-stage__sidebar" aria-labelledby="results-stage-title">
+          <div class="results-stage__intro">
+            <p class="results-stage__eyebrow">Practice Result</p>
+            <h1 id="results-stage-title">연습 기록</h1>
+            <p>
+              게임 화면에서 이어진 연습 결과를 확인할 수 있습니다.
+            </p>
+          </div>
+          <div class="results-stage__sidebar-panel">
+            ${renderResultsSidebarStat("저장된 세션", `${state.results.length}개`)}
+            ${renderResultsSidebarStat(
+              "최근 플레이",
+              latestResult ? formatDateTime(latestResult.playedAt) : "-",
+            )}
+            ${renderResultsSidebarStat(
+              "최고 연습 점수",
+              bestResult
+                ? `${GAME_META[bestResult.gameId]?.title ?? bestResult.gameId} ${formatScore(bestResult.practiceScore)}`
+                : "-",
+            )}
+          </div>
+          <div class="results-stage__sidebar-actions">
+            <button
+              type="button"
+              class="results-stage__primary-action"
+              data-action="navigate"
+              data-route="/games/potion"
+            >
+              마법약 만들기
+            </button>
+            <button
+              type="button"
+              class="results-stage__secondary-action"
+              data-action="navigate"
+              data-route="/"
+            >
+              메인으로
+            </button>
+            <button
+              type="button"
+              class="results-stage__ghost-action"
+              data-action="clear-results"
+              ${state.results.length > 0 ? "" : "disabled"}
+            >
+              기록 초기화
+            </button>
+          </div>
+        </aside>
+        <section class="results-stage__content" aria-label="저장된 기록">
+          <div class="results-stage__content-header">
+            <div>
+              <p class="results-stage__eyebrow">Saved Sessions</p>
+              <h2>게임별 요약</h2>
+              <p>최근 점수, 최고 점수, 마지막 플레이 시각을 빠르게 비교할 수 있습니다.</p>
+            </div>
+          </div>
+          <div class="results-stage__grid">
+            ${renderResultsStageCard(GAME_META.potion, resultsSummary.potion)}
+            ${renderResultsStageCard(GAME_META.sequence, resultsSummary.sequence)}
+          </div>
+          <section class="results-log" aria-labelledby="results-log-title">
+            <div class="results-log__header">
+              <div>
+                <p class="results-stage__eyebrow">Recent Sessions</p>
+                <h2 id="results-log-title">최근 저장 기록</h2>
               </div>
-            `
-            : `<p class="empty-note">아직 저장된 연습 기록이 없습니다.</p>`
-        }
-      </section>
+              <span class="results-log__count">${state.results.length}건</span>
+            </div>
+            ${
+              state.results.length > 0
+                ? `
+                  <div class="results-log__list">
+                    ${state.results.map((result, index) => renderResultsLogRow(result, index)).join("")}
+                  </div>
+                `
+                : `
+                  <div class="results-log__empty">
+                    <p>아직 저장된 연습 기록이 없습니다.</p>
+                    <p>마법약 만들기를 한 번 완료하면 최근 기록이 이곳에 순서대로 쌓입니다.</p>
+                  </div>
+                `
+            }
+          </section>
+        </section>
+      </div>
     </section>
   `;
 }
 
-function renderResultsCard(title, summary, gameId) {
+function renderResultsSidebarStat(label, value) {
+  return `
+    <div class="results-stage__sidebar-stat">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
+}
+
+function renderResultsStageCard(game, summary) {
+  const statusLabel = summary
+    ? `${summary.total}회 저장`
+    : game.implemented
+      ? "저장 대기"
+      : "구현 전";
+  const statusClass = summary
+    ? " has-data"
+    : game.implemented
+      ? ""
+      : " is-muted";
+  const actionMarkup = game.route
+    ? `
+      <button
+        type="button"
+        class="results-stage-card__action"
+        data-action="navigate"
+        data-route="${game.route}"
+      >
+        ${summary ? "다시 플레이" : "첫 플레이 시작"}
+      </button>
+    `
+    : `<span class="results-stage-card__action is-disabled">준비 중</span>`;
+
   if (!summary) {
     return `
-      <article class="summary-card">
-        <p class="summary-card__label">${title}</p>
-        <p class="empty-note">
-          ${gameId === "potion" ? "아직 저장된 기록이 없습니다." : "게임 구현 전입니다."}
-        </p>
+      <article class="results-stage-card is-empty">
+        <div class="results-stage-card__copy">
+          <div class="results-stage-card__header">
+            <p class="results-stage__eyebrow">Game Summary</p>
+            <span class="results-stage-card__status${statusClass}">${statusLabel}</span>
+          </div>
+          <h3>${game.title}</h3>
+          <p class="results-stage-card__description">
+            ${
+              game.id === "potion"
+                ? "아직 저장된 기록이 없습니다. 첫 플레이를 완료하면 최근 점수와 마지막 플레이가 여기에 정리됩니다."
+                : "이 게임은 아직 구현 전입니다. 추후 구현되면 같은 보드 톤 안에서 결과 카드가 연결됩니다."
+            }
+          </p>
+          <div class="results-stage-card__footer">
+            ${actionMarkup}
+          </div>
+        </div>
+        <div class="results-stage-card__icon" aria-hidden="true">
+          ${renderAssessmentStageIcon(game.id === "potion" ? "potion" : "sequence")}
+        </div>
       </article>
     `;
   }
 
   return `
-    <article class="summary-card">
-      <p class="summary-card__label">${title}</p>
-      <div class="summary-card__stat">
-        <span>최근 점수</span>
-        <strong>${formatScore(summary.latest.practiceScore)}</strong>
+    <article class="results-stage-card">
+      <div class="results-stage-card__copy">
+        <div class="results-stage-card__header">
+          <p class="results-stage__eyebrow">Game Summary</p>
+          <span class="results-stage-card__status${statusClass}">${statusLabel}</span>
+        </div>
+        <h3>${game.title}</h3>
+        <div class="results-stage-card__stats">
+          <div class="results-stage-card__stat">
+            <span>최근 점수</span>
+            <strong>${formatScore(summary.latest.practiceScore)}</strong>
+          </div>
+          <div class="results-stage-card__stat">
+            <span>최고 점수</span>
+            <strong>${formatScore(summary.best.practiceScore)}</strong>
+          </div>
+          <div class="results-stage-card__stat">
+            <span>마지막 플레이</span>
+            <strong>${formatDateTime(summary.latest.playedAt)}</strong>
+          </div>
+        </div>
+        <div class="results-stage-card__footer">
+          ${actionMarkup}
+        </div>
       </div>
-      <div class="summary-card__stat">
-        <span>최고 점수</span>
-        <strong>${formatScore(summary.best.practiceScore)}</strong>
-      </div>
-      <div class="summary-card__stat">
-        <span>마지막 플레이</span>
-        <strong>${formatDateTime(summary.latest.playedAt)}</strong>
+      <div class="results-stage-card__icon" aria-hidden="true">
+        ${renderAssessmentStageIcon(game.id === "potion" ? "potion" : "sequence")}
       </div>
     </article>
   `;
 }
 
-function renderRecordRow(result) {
+function renderResultsLogRow(result, index) {
   return `
-    <article class="record-row">
-      <div>
-        <p class="record-row__title">${GAME_META[result.gameId]?.title ?? result.gameId}</p>
-        <p class="record-row__time">${formatDateTime(result.playedAt)}</p>
+    <article class="results-log-row">
+      <div class="results-log-row__primary">
+        <span class="results-log-row__index">${String(index + 1).padStart(2, "0")}</span>
+        <div>
+          <p class="results-log-row__title">${GAME_META[result.gameId]?.title ?? result.gameId}</p>
+          <p class="results-log-row__time">${formatDateTime(result.playedAt)}</p>
+        </div>
       </div>
-      <div class="record-row__metrics">
-        <span>점수 ${formatScore(result.practiceScore)}</span>
-        <span>정확도 ${formatPercent(result.practiceAccuracy)}</span>
-        <span>문항 ${result.roundsCompleted}</span>
-        <span>${formatDuration(result.durationMs)}</span>
+      <div class="results-log-row__metrics">
+        <span><strong>${formatScore(result.practiceScore)}</strong><em>연습 점수</em></span>
+        <span><strong>${formatPercent(result.practiceAccuracy)}</strong><em>정확도</em></span>
+        <span><strong>${result.roundsCompleted}</strong><em>문항</em></span>
+        <span><strong>${formatDuration(result.durationMs)}</strong><em>플레이 시간</em></span>
       </div>
     </article>
   `;
+}
+
+function getBestPracticeResult(results) {
+  return results.reduce((best, current) => {
+    if (!best) {
+      return current;
+    }
+
+    return (current.practiceScore ?? -Infinity) >
+      (best.practiceScore ?? -Infinity)
+      ? current
+      : best;
+  }, null);
 }
 
 function renderSequencePage(resultSummary) {
