@@ -2,6 +2,7 @@ const {
   DEFAULT_POTION_GAME_CONFIG,
   DEFAULT_POTION_INGREDIENTS,
   createPotionGameConfig,
+  getPotionDominantColorProbabilityForQuestionCount,
   validatePotionGameConfig,
 } = require("./config");
 const { buildPotionComboCatalog } = require("./combo");
@@ -26,6 +27,7 @@ module.exports = {
   buildPotionComboCatalog,
   createPotionDominantColorMap,
   createPotionGameConfig,
+  getPotionDominantColorProbabilityForQuestionCount,
   createPotionQuestionPlan,
   createPotionSession,
   getPotionSpeedBandScore,

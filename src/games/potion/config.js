@@ -5,6 +5,12 @@ const DEFAULT_POTION_INGREDIENTS = Object.freeze([
   Object.freeze({ id: "ingredient-4", label: "Ingredient 4" }),
 ]);
 
+const DOMINANT_COLOR_PROBABILITY_FALLBACK = 0.8;
+const DOMINANT_COLOR_PROBABILITY_MIN_QUESTION_COUNT = 40;
+const DOMINANT_COLOR_PROBABILITY_MAX_QUESTION_COUNT = 100;
+const DOMINANT_COLOR_PROBABILITY_AT_MIN_QUESTION_COUNT = 0.95;
+const DOMINANT_COLOR_PROBABILITY_AT_MAX_QUESTION_COUNT = 0.8;
+
 const DEFAULT_POTION_GAME_CONFIG = deepFreeze({
   introAutoStartSec: 9,
   sessionQuestionCount: 100,
@@ -45,6 +51,10 @@ const DEFAULT_POTION_GAME_CONFIG = deepFreeze({
 });
 
 function createPotionGameConfig(overrides = {}) {
+  const hasExplicitDominantColorProbability = Object.prototype.hasOwnProperty.call(
+    overrides,
+    "dominantColorProbability",
+  );
   const config = {
     ...DEFAULT_POTION_GAME_CONFIG,
     ...overrides,
@@ -68,8 +78,40 @@ function createPotionGameConfig(overrides = {}) {
     }),
   };
 
+  if (!hasExplicitDominantColorProbability) {
+    config.dominantColorProbability =
+      getPotionDominantColorProbabilityForQuestionCount(
+        config.sessionQuestionCount,
+      );
+  }
+
   validatePotionGameConfig(config);
   return deepFreeze(config);
+}
+
+function getPotionDominantColorProbabilityForQuestionCount(questionCount) {
+  if (!Number.isFinite(questionCount)) {
+    throw new Error("questionCount must be a finite number.");
+  }
+
+  if (
+    questionCount < DOMINANT_COLOR_PROBABILITY_MIN_QUESTION_COUNT ||
+    questionCount > DOMINANT_COLOR_PROBABILITY_MAX_QUESTION_COUNT
+  ) {
+    return DOMINANT_COLOR_PROBABILITY_FALLBACK;
+  }
+
+  const progress =
+    (questionCount - DOMINANT_COLOR_PROBABILITY_MIN_QUESTION_COUNT) /
+    (DOMINANT_COLOR_PROBABILITY_MAX_QUESTION_COUNT -
+      DOMINANT_COLOR_PROBABILITY_MIN_QUESTION_COUNT);
+  const probability =
+    DOMINANT_COLOR_PROBABILITY_AT_MIN_QUESTION_COUNT -
+    (DOMINANT_COLOR_PROBABILITY_AT_MIN_QUESTION_COUNT -
+      DOMINANT_COLOR_PROBABILITY_AT_MAX_QUESTION_COUNT) *
+      progress;
+
+  return Number(probability.toFixed(4));
 }
 
 function validatePotionGameConfig(config) {
@@ -258,5 +300,6 @@ module.exports = {
   DEFAULT_POTION_GAME_CONFIG,
   DEFAULT_POTION_INGREDIENTS,
   createPotionGameConfig,
+  getPotionDominantColorProbabilityForQuestionCount,
   validatePotionGameConfig,
 };

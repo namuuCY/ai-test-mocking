@@ -1,6 +1,11 @@
 const STORAGE_KEY = "ai-test-mocking.practice-results.v1";
 let memoryResults = [];
 
+const DEFAULT_POTION_RESULT_CONFIG = Object.freeze({
+  sessionQuestionCount: 100,
+  questionTimeLimitSec: 3,
+});
+
 export function loadPracticeResults() {
   const storage = getStorage();
 
@@ -44,10 +49,11 @@ export function clearPracticeResults() {
   memoryResults = [];
 }
 
-export function summarizeResultsByGame(results) {
+export function summarizeResultsByGame(results, options = {}) {
   const summaryByGameId = {};
+  const comparableResults = filterComparablePracticeResults(results, options);
 
-  for (const result of results) {
+  for (const result of comparableResults) {
     const gameId = result.gameId;
     if (!summaryByGameId[gameId]) {
       summaryByGameId[gameId] = {
@@ -66,6 +72,52 @@ export function summarizeResultsByGame(results) {
   }
 
   return summaryByGameId;
+}
+
+export function filterComparablePracticeResults(results, options = {}) {
+  const potionConfigSignature = getPotionConfigSignature(options.potionConfig);
+  if (!potionConfigSignature) {
+    return [...results];
+  }
+
+  return results.filter((result) => {
+    if (result?.gameId !== "potion") {
+      return true;
+    }
+
+    return getPotionResultConfigSignature(result) === potionConfigSignature;
+  });
+}
+
+export function getPotionResultConfigSignature(resultOrConfig) {
+  const questionCount = Number(
+    resultOrConfig?.configSnapshot?.sessionQuestionCount ??
+      resultOrConfig?.sessionQuestionCount ??
+      (resultOrConfig?.gameId === "potion"
+        ? DEFAULT_POTION_RESULT_CONFIG.sessionQuestionCount
+        : NaN),
+  );
+  const timeLimitSec = Number(
+    resultOrConfig?.configSnapshot?.questionTimeLimitSec ??
+      resultOrConfig?.questionTimeLimitSec ??
+      (resultOrConfig?.gameId === "potion"
+        ? DEFAULT_POTION_RESULT_CONFIG.questionTimeLimitSec
+        : NaN),
+  );
+
+  if (!Number.isFinite(questionCount) || !Number.isFinite(timeLimitSec)) {
+    return null;
+  }
+
+  return `potion:${questionCount}:${timeLimitSec}`;
+}
+
+function getPotionConfigSignature(config) {
+  if (!config) {
+    return null;
+  }
+
+  return getPotionResultConfigSignature(config);
 }
 
 function getStorage() {

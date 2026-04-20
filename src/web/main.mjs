@@ -2,6 +2,7 @@ import {
   DEFAULT_POTION_GAME_CONFIG,
   DEFAULT_POTION_INGREDIENTS,
   buildPotionComboCatalog,
+  createPotionGameConfig,
   createPotionSession,
   getPotionCurrentQuestion,
   submitPotionAnswer,
@@ -9,6 +10,8 @@ import {
 } from "./potion-engine.mjs";
 import {
   clearPracticeResults,
+  filterComparablePracticeResults,
+  getPotionResultConfigSignature,
   loadPracticeResults,
   savePracticeResult,
   summarizeResultsByGame,
@@ -152,6 +155,24 @@ const POTION_UNVERIFIED = [
 const POTION_TIMER_DANGER_THRESHOLD_SEC = 1;
 const POTION_FEEDBACK_STAGE_DURATION_MS = 1200;
 const DEFAULT_HOME_STAGE_DETAIL_TAB_ID = "overview";
+export const POTION_SETTING_DEFINITIONS = Object.freeze({
+  sessionQuestionCount: Object.freeze({
+    label: "문항 수",
+    min: 40,
+    max: 100,
+    step: 1,
+    unit: "문항",
+    description: "문항 수가 많을 수록 난이도가 더 어려워 집니다.",
+  }),
+  questionTimeLimitSec: Object.freeze({
+    label: "응답 시간",
+    min: 3,
+    max: 10,
+    step: 1,
+    unit: "초",
+    description: "속도 점수 구간도 남은 시간 비율에 맞춰 함께 늘어납니다.",
+  }),
+});
 
 const state = {
   route: getCurrentRoute(),
@@ -187,6 +208,7 @@ export function initApp() {
   }
 
   rootElement.addEventListener("click", handleRootClick);
+  rootElement.addEventListener("change", handleRootChange);
   rootElement.addEventListener("pointermove", handleRootPointerMove);
   rootElement.addEventListener("pointerleave", handleRootPointerLeave);
   window.addEventListener("hashchange", handleRouteChange);
@@ -203,12 +225,53 @@ function createHomeViewState() {
   };
 }
 
-function createPotionViewState() {
+function createDefaultPotionSettings() {
   return {
+    sessionQuestionCount: DEFAULT_POTION_GAME_CONFIG.sessionQuestionCount,
+    questionTimeLimitSec: DEFAULT_POTION_GAME_CONFIG.questionTimeLimitSec,
+  };
+}
+
+function normalizePotionSettings(settings = {}) {
+  return {
+    sessionQuestionCount: normalizePotionSettingValue(
+      "sessionQuestionCount",
+      settings.sessionQuestionCount,
+      DEFAULT_POTION_GAME_CONFIG.sessionQuestionCount,
+    ),
+    questionTimeLimitSec: normalizePotionSettingValue(
+      "questionTimeLimitSec",
+      settings.questionTimeLimitSec,
+      DEFAULT_POTION_GAME_CONFIG.questionTimeLimitSec,
+    ),
+  };
+}
+
+function normalizePotionSettingValue(settingKey, rawValue, fallbackValue) {
+  const definition = POTION_SETTING_DEFINITIONS[settingKey];
+  if (!definition) {
+    return fallbackValue;
+  }
+
+  const numericValue = Number(rawValue);
+  if (!Number.isFinite(numericValue)) {
+    return fallbackValue;
+  }
+
+  return clamp(Math.round(numericValue), definition.min, definition.max);
+}
+
+function createPotionViewState(options = {}) {
+  const settings = normalizePotionSettings(
+    options.settings ?? createDefaultPotionSettings(),
+  );
+  const session = createFreshPotionSession(settings);
+
+  return {
+    settings,
     phase: "tutorial",
-    session: createFreshPotionSession(),
-    introEndsAtMs:
-      Date.now() + DEFAULT_POTION_GAME_CONFIG.introAutoStartSec * 1000,
+    session,
+    introEndsAtMs: Date.now() + session.config.introAutoStartSec * 1000,
     questionStartedAtMs: null,
     checkingEndsAtMs: null,
     feedback: null,
@@ -217,12 +280,13 @@ function createPotionViewState() {
   };
 }
 
-function createFreshPotionSession() {
+function createFreshPotionSession(settings = createDefaultPotionSettings()) {
+  const normalizedSettings = normalizePotionSettings(settings);
+  const config = createPotionGameConfig(normalizedSettings);
+
   return createPotionSession({
-    comboCatalog: buildPotionComboCatalog(
-      DEFAULT_POTION_INGREDIENTS,
-      DEFAULT_POTION_GAME_CONFIG,
-    ),
+    config,
+    comboCatalog: buildPotionComboCatalog(DEFAULT_POTION_INGREDIENTS, config),
     createdAt: new Date().toISOString(),
   });
 }
@@ -263,6 +327,22 @@ function clearTrackedPointerState() {
   pointerState.y = null;
   pointerState.isInsideRoot = false;
   syncPotionChoiceHoverFromPointer();
+}
+
+function handleRootChange(event) {
+  const actionElement = getActionElementFromTarget(event.target);
+  if (!(actionElement instanceof HTMLInputElement)) {
+    return;
+  }
+
+  if (actionElement.dataset.action !== "update-potion-setting") {
+    return;
+  }
+
+  const settingKey = actionElement.dataset.settingKey;
+  if (settingKey) {
+    setPotionPracticeSetting(settingKey, actionElement.value);
+  }
 }
 
 function handleRootClick(event) {
@@ -363,6 +443,63 @@ function getSelectedAssessmentStageGame() {
   return getAssessmentStageGameById(state.home.selectedStageGameId);
 }
 
+export function getPotionStageDetailContent(config) {
+  return {
+    meta: [
+      GAME_META.potion.category,
+      `총 ${config.sessionQuestionCount}문항`,
+      `문항당 ${config.questionTimeLimitSec}초`,
+    ],
+    tabs: [
+      {
+        id: "overview",
+        label: "게임 소개",
+        title: "어떤 게임인지 먼저 파악합니다",
+        paragraphs: [
+          "같은 재료 조합이라도 결과가 달라질 수 있기 때문에, 한 번의 결과보다 반복되는 경향을 빠르게 읽어내는 것이 핵심입니다.",
+          "즉시 피드백을 보며 어떤 조합이 어느 색으로 더 자주 이어지는지 학습하고, 다음 선택에 반영해야 합니다.",
+        ],
+      },
+      {
+        id: "flow",
+        label: "진행 방식",
+        title: "실전에서는 이렇게 진행됩니다",
+        bullets: [
+          `총 ${config.sessionQuestionCount}문항이 순차적으로 제시됩니다.`,
+          `각 문항은 ${config.questionTimeLimitSec}초 안에 응답해야 합니다.`,
+          "문항마다 즉시 결과 피드백이 제공됩니다.",
+          "반복 조합의 누적 경향을 학습하는 것이 가장 중요합니다.",
+        ],
+      },
+      {
+        id: "settings",
+        label: "게임 설정",
+        title: "연습할 세션 길이와 제한 시간을 조정합니다",
+        kind: "settings",
+        paragraphs: [
+          "설정이 달라지면 연습 점수 비교는 같은 문항 수와 같은 제한 시간 기록끼리만 묶입니다.",
+        ],
+      },
+    ],
+  };
+}
+
+function getAssessmentStageDetailTabs(game) {
+  if (game?.id !== "potion-stage") {
+    return game?.detailTabs ?? [];
+  }
+
+  return getPotionStageDetailContent(state.potion.session.config).tabs;
+}
+
+function getAssessmentStageDetailMeta(game) {
+  if (game?.id !== "potion-stage") {
+    return game?.detailMeta ?? [];
+  }
+
+  return getPotionStageDetailContent(state.potion.session.config).meta;
+}
+
 function openHomeStageDetail(gameId) {
   const game = getAssessmentStageGameById(gameId);
   if (!game?.route) {
@@ -371,7 +508,8 @@ function openHomeStageDetail(gameId) {
 
   state.home.selectedStageGameId = game.id;
   state.home.selectedStageDetailTabId =
-    game.detailTabs?.[0]?.id ?? DEFAULT_HOME_STAGE_DETAIL_TAB_ID;
+    getAssessmentStageDetailTabs(game)[0]?.id ??
+    DEFAULT_HOME_STAGE_DETAIL_TAB_ID;
   renderApp();
 }
 
@@ -390,7 +528,9 @@ function closeHomeStageDetail({ shouldRender = true } = {}) {
 
 function setHomeStageDetailTab(tabId) {
   const selectedGame = getSelectedAssessmentStageGame();
-  const matchingTab = selectedGame?.detailTabs?.find((tab) => tab.id === tabId);
+  const matchingTab = getAssessmentStageDetailTabs(selectedGame).find(
+    (tab) => tab.id === tabId,
+  );
 
   if (!matchingTab || state.home.selectedStageDetailTabId === tabId) {
     return;
@@ -408,10 +548,10 @@ function syncHomeStageDetailTabUi() {
   }
 
   const selectedGame = getSelectedAssessmentStageGame();
+  const detailTabs = getAssessmentStageDetailTabs(selectedGame);
   const selectedTab =
-    selectedGame?.detailTabs?.find(
-      (tab) => tab.id === state.home.selectedStageDetailTabId,
-    ) ?? selectedGame?.detailTabs?.[0];
+    detailTabs.find((tab) => tab.id === state.home.selectedStageDetailTabId) ??
+    detailTabs[0];
   const panelSlotElement = rootElement.querySelector(
     ".assessment-stage-drawer__panel-slot",
   );
@@ -428,14 +568,38 @@ function syncHomeStageDetailTabUi() {
       continue;
     }
 
-    const isActive =
-      tabButton.getAttribute("data-tab-id") === selectedTab.id;
+    const isActive = tabButton.getAttribute("data-tab-id") === selectedTab.id;
     tabButton.classList.toggle("is-active", isActive);
     tabButton.setAttribute("aria-pressed", isActive ? "true" : "false");
   }
 
   panelSlotElement.innerHTML = renderAssessmentStageDetailTabPanel(selectedTab);
   return true;
+}
+
+function setPotionPracticeSetting(settingKey, rawValue) {
+  const definition = POTION_SETTING_DEFINITIONS[settingKey];
+  if (!definition) {
+    return;
+  }
+
+  const currentValue = state.potion.settings[settingKey];
+  const nextValue = normalizePotionSettingValue(
+    settingKey,
+    rawValue,
+    currentValue,
+  );
+  if (currentValue === nextValue && String(rawValue) === String(currentValue)) {
+    return;
+  }
+
+  state.potion = createPotionViewState({
+    settings: {
+      ...state.potion.settings,
+      [settingKey]: nextValue,
+    },
+  });
+  renderApp();
 }
 
 function getPotionHoveredChoiceColorFromPointer() {
@@ -745,6 +909,10 @@ function persistPotionResult() {
     practiceAccuracy: roundNumber(session.summary.practiceAccuracy, 4),
     roundsCompleted: session.completedQuestionCount,
     durationMs,
+    configSnapshot: {
+      sessionQuestionCount: session.config.sessionQuestionCount,
+      questionTimeLimitSec: session.config.questionTimeLimitSec,
+    },
   };
 
   state.results = savePracticeResult(practiceResult);
@@ -756,7 +924,9 @@ function resetPotionExperience() {
   clearQuestionTimers();
   clearFeedbackTimer();
 
-  state.potion = createPotionViewState();
+  state.potion = createPotionViewState({
+    settings: state.potion.settings,
+  });
 
   ensurePotionLoopForCurrentState();
   renderApp();
@@ -775,7 +945,9 @@ function abortPotionSession() {
   clearIntroTimers();
   clearQuestionTimers();
   clearFeedbackTimer();
-  state.potion = createPotionViewState();
+  state.potion = createPotionViewState({
+    settings: state.potion.settings,
+  });
   navigate("/");
 }
 
@@ -800,7 +972,9 @@ function renderApp() {
     return;
   }
 
-  const resultsSummary = summarizeResultsByGame(state.results);
+  const resultsSummary = summarizeResultsByGame(state.results, {
+    potionConfig: state.potion.settings,
+  });
   const pageMarkup = getRouteMarkup(state.route, resultsSummary);
   const isPotionRoute = state.route === "/games/potion";
   const isHomeRoute = state.route === "/";
@@ -947,10 +1121,12 @@ function renderAssessmentStageCard(game) {
 }
 
 function renderAssessmentStageDetailDrawer(game) {
+  const detailTabs = getAssessmentStageDetailTabs(game);
   const tab =
-    game.detailTabs?.find(
+    detailTabs.find(
       (detailTab) => detailTab.id === state.home.selectedStageDetailTabId,
-    ) ?? game.detailTabs?.[0];
+    ) ?? detailTabs[0];
+  const detailMeta = getAssessmentStageDetailMeta(game);
 
   return `
     <div class="assessment-home__detail-layer">
@@ -987,13 +1163,13 @@ function renderAssessmentStageDetailDrawer(game) {
             </div>
           </div>
           <div class="assessment-stage-drawer__meta">
-            ${(game.detailMeta ?? []).map((item) => `<span>${item}</span>`).join("")}
+            ${detailMeta.map((item) => `<span>${item}</span>`).join("")}
           </div>
           <div class="assessment-stage-drawer__artwork" aria-hidden="true">
             ${renderAssessmentStageDrawerArtwork(game.icon)}
           </div>
           <nav class="assessment-stage-drawer__tabs" aria-label="${game.title} 안내 탭">
-            ${(game.detailTabs ?? [])
+            ${detailTabs
               .map(
                 (detailTab) => `
                   <button
@@ -1040,6 +1216,10 @@ function renderAssessmentStageDetailTabPanel(tab) {
     return "";
   }
 
+  if (tab.kind === "settings") {
+    return renderPotionSettingsPanel(tab);
+  }
+
   return `
     <section class="assessment-stage-drawer__panel">
       <p class="assessment-stage-drawer__panel-eyebrow">${tab.label}</p>
@@ -1057,6 +1237,74 @@ function renderAssessmentStageDetailTabPanel(tab) {
           : ""
       }
     </section>
+  `;
+}
+
+function renderPotionSettingsPanel(tab) {
+  const config = state.potion.session.config;
+
+  return `
+    <section class="assessment-stage-drawer__panel assessment-stage-drawer__panel--settings">
+      <p class="assessment-stage-drawer__panel-eyebrow">${tab.label}</p>
+      <h3>${tab.title}</h3>
+      ${(tab.paragraphs ?? []).map((paragraph) => `<p>${paragraph}</p>`).join("")}
+      <div class="assessment-stage-settings">
+        ${renderPotionSettingField("sessionQuestionCount")}
+        ${renderPotionSettingField("questionTimeLimitSec")}
+      </div>
+      <div class="assessment-stage-settings__summary">
+        <span>현재 설정</span>
+        <strong>${formatPotionConfigLabel(config)}</strong>
+      </div>
+    </section>
+  `;
+}
+
+function renderPotionSettingField(settingKey) {
+  const definition = POTION_SETTING_DEFINITIONS[settingKey];
+  if (!definition) {
+    return "";
+  }
+
+  const value = state.potion.settings[settingKey];
+
+  return `
+    <div class="assessment-stage-setting">
+      <div class="assessment-stage-setting__copy">
+        <label class="assessment-stage-setting__label" for="potion-setting-${settingKey}">
+          ${definition.label}
+        </label>
+        <p class="assessment-stage-setting__description">${definition.description}</p>
+      </div>
+      <div class="assessment-stage-setting__control-row">
+        <input
+          id="potion-setting-${settingKey}"
+          class="assessment-stage-setting__slider"
+          type="range"
+          min="${definition.min}"
+          max="${definition.max}"
+          step="${definition.step}"
+          value="${value}"
+          data-action="update-potion-setting"
+          data-setting-key="${settingKey}"
+          aria-label="${definition.label} 슬라이더"
+        />
+        <div class="assessment-stage-setting__number-wrap">
+          <input
+            class="assessment-stage-setting__number"
+            type="number"
+            min="${definition.min}"
+            max="${definition.max}"
+            step="${definition.step}"
+            value="${value}"
+            data-action="update-potion-setting"
+            data-setting-key="${settingKey}"
+            aria-label="${definition.label} 숫자 입력"
+          />
+          <span class="assessment-stage-setting__unit">${definition.unit}</span>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -1219,6 +1467,7 @@ function renderPotionPage(resultSummary) {
 }
 
 function renderPotionTutorialStage(currentQuestion) {
+  const config = state.potion.session.config;
   const progressRatio = getPotionIntroProgressRatio();
 
   return `
@@ -1238,9 +1487,10 @@ function renderPotionTutorialStage(currentQuestion) {
           </div>
         </div>
         <ol class="potion-tutorial-card__rules">
-          <li>4개의 재료 조합이 총 100번 제시됩니다.</li>
+          <li>4개의 재료 조합이 총 ${config.sessionQuestionCount}번 제시됩니다.</li>
           <li>4개의 재료 조합이 어떤 마법약으로 제조될지 정확히 기억하여 제조될 마법약을 선택해 주세요.</li>
           <li>같은 재료 조합이라도 경우에 따라 결과가 달라지니 더 높은 확률로 제조될 마법약을 선택해 주세요.</li>
+          <li>각 문항은 ${config.questionTimeLimitSec}초 안에 응답해야 합니다.</li>
         </ol>
       </div>
       <div class="potion-tutorial-card__footer">
@@ -2082,8 +2332,11 @@ function renderMetricCard(label, value) {
 }
 
 function renderResultsPage(resultsSummary) {
+  const comparableResults = filterComparablePracticeResults(state.results, {
+    potionConfig: state.potion.settings,
+  });
   const latestResult = state.results[0] ?? null;
-  const bestResult = getBestPracticeResult(state.results);
+  const bestResult = getBestPracticeResult(comparableResults);
 
   return `
     <section class="results-stage">
@@ -2103,7 +2356,7 @@ function renderResultsPage(resultsSummary) {
               latestResult ? formatDateTime(latestResult.playedAt) : "-",
             )}
             ${renderResultsSidebarStat(
-              "최고 연습 점수",
+              "현재 설정 최고 연습 점수",
               bestResult
                 ? `${GAME_META[bestResult.gameId]?.title ?? bestResult.gameId} ${formatScore(bestResult.practiceScore)}`
                 : "-",
@@ -2141,7 +2394,7 @@ function renderResultsPage(resultsSummary) {
             <div>
               <p class="results-stage__eyebrow">Saved Sessions</p>
               <h2>게임별 요약</h2>
-              <p>최근 점수, 최고 점수, 마지막 플레이 시각을 빠르게 비교할 수 있습니다.</p>
+              <p>현재 선택된 설정과 같은 기록끼리만 최근 점수와 최고 점수를 비교합니다.</p>
             </div>
           </div>
           <div class="results-stage__grid">
@@ -2222,7 +2475,9 @@ function renderResultsStageCard(game, summary) {
           <p class="results-stage-card__description">
             ${
               game.id === "potion"
-                ? "아직 저장된 기록이 없습니다. 첫 플레이를 완료하면 최근 점수와 마지막 플레이가 여기에 정리됩니다."
+                ? state.results.some((result) => result.gameId === "potion")
+                  ? `현재 설정(${formatPotionConfigLabel(state.potion.session.config)})과 같은 기록이 없습니다. 다른 설정 기록은 아래 최근 저장 기록에서 확인할 수 있습니다.`
+                  : "아직 저장된 기록이 없습니다. 첫 플레이를 완료하면 최근 점수와 마지막 플레이가 여기에 정리됩니다."
                 : "이 게임은 아직 구현 전입니다. 추후 구현되면 같은 보드 톤 안에서 결과 카드가 연결됩니다."
             }
           </p>
@@ -2245,6 +2500,11 @@ function renderResultsStageCard(game, summary) {
           <span class="results-stage-card__status${statusClass}">${statusLabel}</span>
         </div>
         <h3>${game.title}</h3>
+        ${
+          game.id === "potion"
+            ? `<p class="results-stage-card__description">비교 기준: ${formatPotionConfigLabel(state.potion.session.config)}</p>`
+            : ""
+        }
         <div class="results-stage-card__stats">
           <div class="results-stage-card__stat">
             <span>최근 점수</span>
@@ -2271,6 +2531,15 @@ function renderResultsStageCard(game, summary) {
 }
 
 function renderResultsLogRow(result, index) {
+  const configLabel =
+    result.gameId === "potion"
+      ? formatPotionConfigLabel(result.configSnapshot)
+      : "";
+  const isComparable =
+    result.gameId !== "potion" ||
+    getPotionResultConfigSignature(result) ===
+      getPotionResultConfigSignature(state.potion.settings);
+
   return `
     <article class="results-log-row">
       <div class="results-log-row__primary">
@@ -2278,6 +2547,11 @@ function renderResultsLogRow(result, index) {
         <div>
           <p class="results-log-row__title">${GAME_META[result.gameId]?.title ?? result.gameId}</p>
           <p class="results-log-row__time">${formatDateTime(result.playedAt)}</p>
+          ${
+            configLabel
+              ? `<p class="results-log-row__config ${isComparable ? "is-comparable" : "is-different"}">${configLabel}${isComparable ? " · 현재 설정과 비교 가능" : " · 다른 설정"}</p>`
+              : ""
+          }
         </div>
       </div>
       <div class="results-log-row__metrics">
@@ -2301,6 +2575,27 @@ function getBestPracticeResult(results) {
       ? current
       : best;
   }, null);
+}
+
+function formatPotionConfigLabel(config) {
+  const questionCount =
+    config?.sessionQuestionCount ??
+    DEFAULT_POTION_GAME_CONFIG.sessionQuestionCount;
+  const timeLimitSec =
+    config?.questionTimeLimitSec ??
+    DEFAULT_POTION_GAME_CONFIG.questionTimeLimitSec;
+
+  return `${questionCount}문항 · ${timeLimitSec}초`;
+}
+
+function formatPotionProbability(probability) {
+  if (typeof probability !== "number") {
+    return "-";
+  }
+
+  const percent = probability * 100;
+  const hasFraction = Math.abs(percent - Math.round(percent)) > 1e-9;
+  return `${hasFraction ? percent.toFixed(1) : percent.toFixed(0)}%`;
 }
 
 function renderSequencePage(resultSummary) {

@@ -1191,6 +1191,7 @@ button.assessment-stage-card:focus-visible {
 
 .assessment-stage-drawer__tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
 }
@@ -1245,6 +1246,103 @@ button.assessment-stage-card:focus-visible {
   margin: 12px 0 0;
   color: #626d78;
   line-height: 1.7;
+}
+
+.assessment-stage-settings {
+  margin-top: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.assessment-stage-setting {
+  display: grid;
+  gap: 12px;
+}
+
+.assessment-stage-setting__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.assessment-stage-setting__label {
+  color: #20242b;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.assessment-stage-setting__description {
+  margin: 0;
+  color: #77818d;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.assessment-stage-setting__control-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.assessment-stage-setting__slider {
+  width: 100%;
+  margin: 0;
+  accent-color: #55c8bc;
+}
+
+.assessment-stage-setting__number-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  min-height: 46px;
+  border: 1px solid #dde3ea;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.assessment-stage-setting__number {
+  width: 64px;
+  border: 0;
+  padding: 0;
+  color: #20242b;
+  font: inherit;
+  font-weight: 700;
+  text-align: right;
+  background: transparent;
+  appearance: textfield;
+}
+
+.assessment-stage-setting__number::-webkit-outer-spin-button,
+.assessment-stage-setting__number::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.assessment-stage-setting__number:focus {
+  outline: none;
+}
+
+.assessment-stage-setting__unit {
+  color: #7f8995;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.assessment-stage-settings__summary {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(222, 227, 234, 0.92);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: #60707d;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.assessment-stage-settings__summary strong {
+  color: #20242b;
 }
 
 .assessment-stage-drawer__panel-list {
@@ -1468,6 +1566,14 @@ button.assessment-stage-card:focus-visible {
     width: 100%;
     min-height: 0;
     border-radius: 24px;
+  }
+
+  .assessment-stage-setting__control-row {
+    grid-template-columns: 1fr;
+  }
+
+  .assessment-stage-setting__number-wrap {
+    justify-self: stretch;
   }
 }
 
@@ -1874,6 +1980,21 @@ body[data-route="results"] .app-shell--results {
 
 .results-log-row__time {
   margin: 0;
+}
+
+.results-log-row__config {
+  margin: 6px 0 0;
+  color: #7f8994;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.results-log-row__config.is-comparable {
+  color: #3fa194;
+}
+
+.results-log-row__config.is-different {
+  color: #b37f45;
 }
 
 .results-log-row__metrics {

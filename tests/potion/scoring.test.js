@@ -5,6 +5,7 @@ const {
   DEFAULT_POTION_GAME_CONFIG,
   buildPotionComboCatalog,
   createPotionGameConfig,
+  getPotionDominantColorProbabilityForQuestionCount,
   getPotionSpeedBandScore,
   scorePotionPracticeSession,
 } = require("../../src/games/potion");
@@ -47,6 +48,52 @@ test("speed bands follow the MVP thresholds including timeout", () => {
   assert.equal(
     getPotionSpeedBandScore({ selectedColor: null, timedOut: true }, DEFAULT_POTION_GAME_CONFIG),
     0,
+  );
+});
+
+test("dominant-color probability scales with question count in the supported range", () => {
+  assert.equal(
+    getPotionDominantColorProbabilityForQuestionCount(100),
+    0.8,
+  );
+  assert.equal(
+    getPotionDominantColorProbabilityForQuestionCount(70),
+    0.875,
+  );
+  assert.equal(
+    getPotionDominantColorProbabilityForQuestionCount(40),
+    0.95,
+  );
+  assert.equal(
+    getPotionDominantColorProbabilityForQuestionCount(4),
+    0.8,
+  );
+
+  const config = createPotionGameConfig({
+    sessionQuestionCount: 50,
+    questionTimeLimitSec: 10,
+  });
+
+  assert.equal(config.dominantColorProbability, 0.925);
+});
+
+test("speed bands stay proportional when the question time limit grows", () => {
+  const config = createPotionGameConfig({
+    sessionQuestionCount: 100,
+    questionTimeLimitSec: 10,
+  });
+
+  assert.equal(
+    getPotionSpeedBandScore({ selectedColor: "blue", responseTimeMs: 6000 }, config),
+    1.0,
+  );
+  assert.equal(
+    getPotionSpeedBandScore({ selectedColor: "blue", responseTimeMs: 8500 }, config),
+    0.3,
+  );
+  assert.equal(
+    getPotionSpeedBandScore({ selectedColor: "blue", responseTimeMs: 9800 }, config),
+    0.1,
   );
 });
 
