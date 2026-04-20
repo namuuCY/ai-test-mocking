@@ -68,6 +68,7 @@ export type PotionPracticeMetrics = {
 export type PotionPracticeComboBreakdown = {
   comboId: string;
   exposureCount: number;
+  scoredQuestionCount: number;
   dominantChoiceCount: number;
   visibleSuccessCount: number;
   visibleFailureCount: number;
@@ -83,6 +84,8 @@ export type PotionPracticeQuestionBreakdown = {
   questionNumber: number;
   comboId: string;
   comboExposureNumber: number;
+  establishedDominantColor: PotionColor | null;
+  scoreEligible: boolean;
   selectedColor: PotionColor | null;
   actualColor: PotionColor;
   dominantColor: PotionColor;
@@ -97,6 +100,7 @@ export type PotionPracticeQuestionBreakdown = {
 export type PotionPracticeSummary = {
   questionCount: number;
   expectedQuestionCount: number;
+  scoredQuestionCount: number;
   practiceAccuracy: number;
   practiceScore: number;
   visibleSuccessCount: number;

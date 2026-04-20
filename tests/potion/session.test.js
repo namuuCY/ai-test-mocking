@@ -113,10 +113,11 @@ test("session progression resolves answers, timeouts, and final scoring", () => 
   assert.equal(thirdTurn.isFinished, true);
   assert.equal(thirdTurn.session.status, "finished");
   assert.equal(thirdTurn.session.endedAt, "2026-04-17T00:00:07.800Z");
-  assert.equal(thirdTurn.session.practiceAccuracy, 1 / 3);
-  assert.equal(thirdTurn.session.summary.metrics.dominantChoiceRate, 2 / 3);
+  assert.equal(thirdTurn.session.practiceAccuracy, 0);
+  assert.equal(thirdTurn.session.summary.scoredQuestionCount, 1);
+  assert.equal(thirdTurn.session.summary.metrics.dominantChoiceRate, 1);
   assert.equal(thirdTurn.session.summary.metrics.recoveryRate, 0);
-  assert.equal(thirdTurn.session.summary.visibleSuccessCount, 1);
+  assert.equal(thirdTurn.session.summary.visibleSuccessCount, 0);
 });
 
 test("actual color sampling follows the dominant-color probability", () => {

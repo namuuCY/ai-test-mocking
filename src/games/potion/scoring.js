@@ -23,6 +23,7 @@ function scorePotionPracticeSession(questionResults, options = {}) {
       {
         comboId: combo.id,
         exposureCount: 0,
+        scoredQuestionCount: 0,
         dominantChoiceCount: 0,
         visibleSuccessCount: 0,
         visibleFailureCount: 0,
@@ -32,10 +33,13 @@ function scorePotionPracticeSession(questionResults, options = {}) {
         recoveryOpportunities: 0,
         recoverySuccesses: 0,
         recoveryFailures: 0,
+        observedBlueCount: 0,
+        observedRedCount: 0,
       },
     ]),
   );
 
+  let scoredQuestionCount = 0;
   let visibleSuccessCount = 0;
   let dominantChoiceCount = 0;
   let speedBandScoreTotal = 0;
@@ -54,10 +58,13 @@ function scorePotionPracticeSession(questionResults, options = {}) {
 
     comboState.exposureCount += 1;
     const exposureNumber = comboState.exposureCount;
-    const selectedDominant = question.selectedColor === question.dominantColor;
+    const establishedDominantColor = getObservedDominantColor(comboState);
+    const scoreEligible = establishedDominantColor !== null;
+    const selectedDominant =
+      scoreEligible && question.selectedColor === establishedDominantColor;
 
     let recoveryResolvedAs = null;
-    if (comboState.pendingRecovery) {
+    if (comboState.pendingRecovery && scoreEligible) {
       comboState.pendingRecovery = false;
 
       if (selectedDominant) {
@@ -70,37 +77,47 @@ function scorePotionPracticeSession(questionResults, options = {}) {
       }
     }
 
-    if (selectedDominant) {
-      dominantChoiceCount += 1;
-      comboState.dominantChoiceCount += 1;
-
-      if (comboState.learnedAtExposure === null) {
-        comboState.learnedAtExposure = exposureNumber;
-        comboState.learningScore =
-          exposureNumber === 1
-            ? 0
-            : config.learningExposureScoreMap[exposureNumber] ?? 0;
-      }
-    }
-
     const visibleResult = getPotionVisibleResult(question, config);
-    if (visibleResult === "success") {
-      visibleSuccessCount += 1;
-      comboState.visibleSuccessCount += 1;
-    } else {
-      recoveryOpportunities += 1;
-      comboState.recoveryOpportunities += 1;
-      comboState.visibleFailureCount += 1;
-      comboState.pendingRecovery = true;
+    const speedBandScore = scoreEligible ? getPotionSpeedBandScore(question, config) : 0;
+
+    if (scoreEligible) {
+      scoredQuestionCount += 1;
+      comboState.scoredQuestionCount += 1;
+
+      if (selectedDominant) {
+        dominantChoiceCount += 1;
+        comboState.dominantChoiceCount += 1;
+
+        if (comboState.learnedAtExposure === null) {
+          comboState.learnedAtExposure = exposureNumber;
+          comboState.learningScore =
+            exposureNumber === 1
+              ? 0
+              : config.learningExposureScoreMap[exposureNumber] ?? 0;
+        }
+      }
+
+      if (visibleResult === "success") {
+        visibleSuccessCount += 1;
+        comboState.visibleSuccessCount += 1;
+      } else {
+        recoveryOpportunities += 1;
+        comboState.recoveryOpportunities += 1;
+        comboState.visibleFailureCount += 1;
+        comboState.pendingRecovery = true;
+      }
+
+      speedBandScoreTotal += speedBandScore;
     }
 
-    const speedBandScore = getPotionSpeedBandScore(question, config);
-    speedBandScoreTotal += speedBandScore;
+    recordObservedActualColor(comboState, question.actualColor);
 
     questionBreakdown.push({
       questionNumber: index + 1,
       comboId: question.comboId,
       comboExposureNumber: exposureNumber,
+      establishedDominantColor,
+      scoreEligible,
       selectedColor: question.selectedColor ?? null,
       actualColor: question.actualColor,
       dominantColor: question.dominantColor,
@@ -116,6 +133,7 @@ function scorePotionPracticeSession(questionResults, options = {}) {
   const comboBreakdown = Array.from(comboStates.values()).map((state) => ({
     comboId: state.comboId,
     exposureCount: state.exposureCount,
+    scoredQuestionCount: state.scoredQuestionCount,
     dominantChoiceCount: state.dominantChoiceCount,
     visibleSuccessCount: state.visibleSuccessCount,
     visibleFailureCount: state.visibleFailureCount,
@@ -127,18 +145,18 @@ function scorePotionPracticeSession(questionResults, options = {}) {
     hasPendingRecovery: state.pendingRecovery,
   }));
 
-  const actualHitRate = visibleSuccessCount / config.sessionQuestionCount;
+  const actualHitRate = safeDivide(visibleSuccessCount, scoredQuestionCount);
   const normalizedHitRate = clamp(
     actualHitRate / config.dominantColorProbability,
     0,
     1,
   );
-  const dominantChoiceRate = dominantChoiceCount / config.sessionQuestionCount;
-  const responseSpeedScore = speedBandScoreTotal / config.sessionQuestionCount;
+  const dominantChoiceRate = safeDivide(dominantChoiceCount, scoredQuestionCount);
+  const responseSpeedScore = safeDivide(speedBandScoreTotal, scoredQuestionCount);
   const learningSpeed =
     comboBreakdown.reduce((sum, combo) => sum + combo.learningScore, 0) /
     comboBreakdown.length;
-  const recoveryRate = recoverySuccesses / Math.max(recoveryOpportunities, 1);
+  const recoveryRate = safeDivide(recoverySuccesses, recoveryOpportunities);
 
   const practiceScore = clamp(
     config.scoreWeights.normalizedHitRate * normalizedHitRate +
@@ -153,6 +171,7 @@ function scorePotionPracticeSession(questionResults, options = {}) {
   return {
     questionCount: questionResults.length,
     expectedQuestionCount: config.sessionQuestionCount,
+    scoredQuestionCount,
     practiceAccuracy: actualHitRate,
     practiceScore,
     visibleSuccessCount,
@@ -208,6 +227,31 @@ function getRemainingTimeRatioFromResponseTime(responseTimeMs, config) {
 
   const timeLimitMs = config.questionTimeLimitSec * 1000;
   return clamp((timeLimitMs - responseTimeMs) / timeLimitMs, 0, 1);
+}
+
+function getObservedDominantColor(comboState) {
+  if (comboState.observedBlueCount > comboState.observedRedCount) {
+    return "blue";
+  }
+
+  if (comboState.observedRedCount > comboState.observedBlueCount) {
+    return "red";
+  }
+
+  return null;
+}
+
+function recordObservedActualColor(comboState, actualColor) {
+  if (actualColor === "blue") {
+    comboState.observedBlueCount += 1;
+    return;
+  }
+
+  comboState.observedRedCount += 1;
+}
+
+function safeDivide(numerator, denominator) {
+  return denominator > 0 ? numerator / denominator : 0;
 }
 
 function normalizeComboCatalog(comboCatalog) {

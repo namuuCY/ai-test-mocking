@@ -50,23 +50,23 @@ test("speed bands follow the MVP thresholds including timeout", () => {
   );
 });
 
-test("practice scoring reflects visible hits, dominant choices, learning, and recovery", () => {
+test("practice scoring starts only after observed results establish a dominant color", () => {
   const config = createPotionGameConfig({
     sessionQuestionCount: 4,
   });
-  const comboCatalog = [{ id: "A" }, { id: "B" }];
+  const comboCatalog = [{ id: "A" }];
 
   const summary = scorePotionPracticeSession(
     [
       {
         comboId: "A",
-        dominantColor: "blue",
-        actualColor: "red",
+        dominantColor: "red",
+        actualColor: "blue",
         selectedColor: "blue",
         responseTimeMs: 1500,
       },
       {
-        comboId: "B",
+        comboId: "A",
         dominantColor: "red",
         actualColor: "red",
         selectedColor: "blue",
@@ -74,16 +74,16 @@ test("practice scoring reflects visible hits, dominant choices, learning, and re
       },
       {
         comboId: "A",
-        dominantColor: "blue",
+        dominantColor: "red",
         actualColor: "blue",
-        selectedColor: "blue",
+        selectedColor: "red",
         responseTimeMs: 500,
       },
       {
-        comboId: "B",
+        comboId: "A",
         dominantColor: "red",
-        actualColor: "red",
-        selectedColor: "red",
+        actualColor: "blue",
+        selectedColor: "blue",
         responseTimeMs: 2900,
       },
     ],
@@ -93,15 +93,50 @@ test("practice scoring reflects visible hits, dominant choices, learning, and re
     },
   );
 
-  assert.equal(summary.visibleSuccessCount, 2);
-  assert.equal(summary.dominantChoiceCount, 3);
-  assert.equal(summary.recoveryOpportunities, 2);
-  assert.equal(summary.recoverySuccesses, 2);
+  assert.equal(summary.scoredQuestionCount, 2);
+  assert.equal(summary.visibleSuccessCount, 1);
+  assert.equal(summary.dominantChoiceCount, 2);
+  assert.equal(summary.recoveryOpportunities, 1);
+  assert.equal(summary.recoverySuccesses, 1);
   assert.equal(summary.practiceAccuracy, 0.5);
   assert.equal(summary.metrics.normalizedHitRate, 0.625);
-  assert.equal(summary.metrics.dominantChoiceRate, 0.75);
-  assert.equal(summary.metrics.responseSpeedScore, 0.6);
-  assert.equal(summary.metrics.learningSpeed, 0.5);
+  assert.equal(summary.metrics.dominantChoiceRate, 1);
+  assert.equal(summary.metrics.responseSpeedScore, 0.2);
+  assert.equal(summary.metrics.learningSpeed, 1);
   assert.equal(summary.metrics.recoveryRate, 1);
-  assert.equal(summary.practiceScore, 67.625);
+  assert.equal(summary.practiceScore, 70.875);
+  assert.deepEqual(
+    summary.questionBreakdown.map((question) => ({
+      number: question.questionNumber,
+      establishedDominantColor: question.establishedDominantColor,
+      scoreEligible: question.scoreEligible,
+      selectedDominant: question.selectedDominant,
+    })),
+    [
+      {
+        number: 1,
+        establishedDominantColor: null,
+        scoreEligible: false,
+        selectedDominant: false,
+      },
+      {
+        number: 2,
+        establishedDominantColor: "blue",
+        scoreEligible: true,
+        selectedDominant: true,
+      },
+      {
+        number: 3,
+        establishedDominantColor: null,
+        scoreEligible: false,
+        selectedDominant: false,
+      },
+      {
+        number: 4,
+        establishedDominantColor: "blue",
+        scoreEligible: true,
+        selectedDominant: true,
+      },
+    ],
+  );
 });
