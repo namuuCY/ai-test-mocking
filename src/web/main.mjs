@@ -140,6 +140,12 @@ const timers = {
   feedbackAdvance: null,
 };
 
+const pointerState = {
+  x: null,
+  y: null,
+  isInsideRoot: false,
+};
+
 let rootElement = null;
 
 export function initApp() {
@@ -153,6 +159,8 @@ export function initApp() {
   }
 
   rootElement.addEventListener("click", handleRootClick);
+  rootElement.addEventListener("pointermove", handleRootPointerMove);
+  rootElement.addEventListener("pointerleave", handleRootPointerLeave);
   window.addEventListener("hashchange", handleRouteChange);
   window.addEventListener("storage", handleStorageChange);
 
@@ -169,6 +177,7 @@ function createPotionViewState() {
     questionStartedAtMs: null,
     checkingEndsAtMs: null,
     feedback: null,
+    hoveredChoiceColor: null,
     savedResultId: null,
   };
 }
@@ -192,6 +201,29 @@ function handleRouteChange() {
 function handleStorageChange() {
   state.results = loadPracticeResults();
   renderApp();
+}
+
+function handleRootPointerMove(event) {
+  if (event.pointerType && event.pointerType !== "mouse") {
+    clearTrackedPointerState();
+    return;
+  }
+
+  pointerState.x = event.clientX;
+  pointerState.y = event.clientY;
+  pointerState.isInsideRoot = true;
+  syncPotionChoiceHoverFromPointer();
+}
+
+function handleRootPointerLeave() {
+  clearTrackedPointerState();
+}
+
+function clearTrackedPointerState() {
+  pointerState.x = null;
+  pointerState.y = null;
+  pointerState.isInsideRoot = false;
+  syncPotionChoiceHoverFromPointer();
 }
 
 function handleRootClick(event) {
@@ -252,6 +284,78 @@ function getActionElementFromTarget(target) {
   }
 
   return null;
+}
+
+function syncPotionChoiceHoverFromPointer() {
+  setPotionHoveredChoiceColor(getPotionHoveredChoiceColorFromPointer());
+}
+
+function getPotionHoveredChoiceColorFromPointer() {
+  if (
+    typeof document === "undefined" ||
+    !pointerState.isInsideRoot ||
+    pointerState.x == null ||
+    pointerState.y == null ||
+    state.route !== "/games/potion" ||
+    state.potion.phase !== "playing"
+  ) {
+    return null;
+  }
+
+  const hoveredElement = document.elementFromPoint(
+    pointerState.x,
+    pointerState.y,
+  );
+  if (!(hoveredElement instanceof Element)) {
+    return null;
+  }
+
+  const hoveredButton = hoveredElement.closest(
+    ".potion-choice-button[data-action='potion-answer']",
+  );
+  if (
+    !(hoveredButton instanceof Element) ||
+    hoveredButton.hasAttribute("disabled")
+  ) {
+    return null;
+  }
+
+  const hoveredColor = hoveredButton.getAttribute("data-color");
+  return hoveredColor === "blue" || hoveredColor === "red"
+    ? hoveredColor
+    : null;
+}
+
+function setPotionHoveredChoiceColor(color) {
+  const nextHoveredChoiceColor =
+    color === "blue" || color === "red" ? color : null;
+  if (state.potion.hoveredChoiceColor === nextHoveredChoiceColor) {
+    return;
+  }
+
+  state.potion.hoveredChoiceColor = nextHoveredChoiceColor;
+  syncPotionChoiceHoverUi();
+}
+
+function syncPotionChoiceHoverUi() {
+  if (!rootElement) {
+    return;
+  }
+
+  const choiceButtons = rootElement.querySelectorAll(
+    ".potion-choice-button[data-action='potion-answer']",
+  );
+  for (const button of choiceButtons) {
+    if (!(button instanceof Element)) {
+      continue;
+    }
+
+    button.classList.toggle(
+      "is-hovered",
+      !button.hasAttribute("disabled") &&
+        button.getAttribute("data-color") === state.potion.hoveredChoiceColor,
+    );
+  }
 }
 
 function navigate(route) {
@@ -569,6 +673,7 @@ function renderApp() {
         ${pageMarkup}
       </div>
     `;
+    syncPotionChoiceHoverFromPointer();
     return;
   }
 
@@ -580,6 +685,7 @@ function renderApp() {
       </main>
     </div>
   `;
+  syncPotionChoiceHoverFromPointer();
 }
 
 function getRouteMarkup(route, resultsSummary) {
@@ -1020,13 +1126,26 @@ function renderPotionPlaceholderArt() {
 
 function renderPotionChoiceButtons() {
   const isPlaying = state.potion.phase === "playing";
+  const hoveredChoiceColor = isPlaying ? state.potion.hoveredChoiceColor : null;
   const selectedColor = null;
+  const blueStateClass = [
+    selectedColor === "blue" ? "is-selected" : "",
+    hoveredChoiceColor === "blue" ? "is-hovered" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const redStateClass = [
+    selectedColor === "red" ? "is-selected" : "",
+    hoveredChoiceColor === "red" ? "is-hovered" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return `
     <div class="potion-choice-row">
       <button
         type="button"
-        class="potion-choice-button potion-choice-button--blue ${selectedColor === "blue" ? "is-selected" : ""}"
+        class="potion-choice-button potion-choice-button--blue ${blueStateClass}"
         data-action="potion-answer"
         data-color="blue"
         ${isPlaying ? "" : "disabled"}
@@ -1035,7 +1154,7 @@ function renderPotionChoiceButtons() {
       </button>
       <button
         type="button"
-        class="potion-choice-button potion-choice-button--red ${selectedColor === "red" ? "is-selected" : ""}"
+        class="potion-choice-button potion-choice-button--red ${redStateClass}"
         data-action="potion-answer"
         data-color="red"
         ${isPlaying ? "" : "disabled"}

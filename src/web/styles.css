@@ -2062,7 +2062,7 @@ body[data-route="potion"] .app-shell--potion {
   opacity: 1;
 }
 
-.potion-choice-button:hover:not(:disabled) {
+.potion-choice-button.is-hovered:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 12px 22px rgba(182, 189, 201, 0.24);
 }
@@ -2082,7 +2082,7 @@ body[data-route="potion"] .app-shell--potion {
   color: #5778df;
 }
 
-.potion-choice-button--blue:hover:not(:disabled) {
+.potion-choice-button--blue.is-hovered:not(:disabled) {
   background: #eef3ff;
   border-color: #89a4ef;
 }
@@ -2092,7 +2092,7 @@ body[data-route="potion"] .app-shell--potion {
   color: #f07673;
 }
 
-.potion-choice-button--red:hover:not(:disabled) {
+.potion-choice-button--red.is-hovered:not(:disabled) {
   background: #fff1f0;
   border-color: #f39794;
 }
