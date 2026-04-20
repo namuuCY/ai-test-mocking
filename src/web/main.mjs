@@ -75,6 +75,31 @@ const ASSESSMENT_STAGE_GAMES = [
     difficulty: "난이도 상",
     icon: "potion",
     route: "/games/potion",
+    detailSummary:
+      "반복되는 재료 조합의 결과를 빠르게 학습하고, 어떤 색의 마법약이 더 높은 확률로 제조될지 예측하는 과제",
+    detailMeta: ["학습능력", "총 1 라운드", "총 6분 소요", "난이도 상"],
+    detailTabs: [
+      {
+        id: "overview",
+        label: "게임 소개",
+        title: "어떤 게임인지 먼저 파악합니다",
+        paragraphs: [
+          "같은 재료 조합이라도 결과가 달라질 수 있기 때문에, 한 번의 결과보다 반복되는 경향을 빠르게 읽어내는 것이 핵심입니다.",
+          "즉시 피드백을 보며 어떤 조합이 어느 색으로 더 자주 이어지는지 학습하고, 다음 선택에 반영해야 합니다.",
+        ],
+      },
+      {
+        id: "flow",
+        label: "진행 방식",
+        title: "실전에서는 이렇게 진행됩니다",
+        bullets: [
+          "총 100문항이 순차적으로 제시됩니다.",
+          "각 문항은 3초 안에 응답해야 합니다.",
+          "문항마다 즉시 결과 피드백이 제공됩니다.",
+          "반복 조합의 누적 경향을 학습하는 것이 가장 중요합니다.",
+        ],
+      },
+    ],
   },
   {
     id: "numbers",
@@ -126,10 +151,12 @@ const POTION_UNVERIFIED = [
 
 const POTION_TIMER_DANGER_THRESHOLD_SEC = 1;
 const POTION_FEEDBACK_STAGE_DURATION_MS = 1200;
+const DEFAULT_HOME_STAGE_DETAIL_TAB_ID = "overview";
 
 const state = {
   route: getCurrentRoute(),
   results: loadPracticeResults(),
+  home: createHomeViewState(),
   potion: createPotionViewState(),
 };
 
@@ -169,6 +196,13 @@ export function initApp() {
   renderApp();
 }
 
+function createHomeViewState() {
+  return {
+    selectedStageGameId: null,
+    selectedStageDetailTabId: DEFAULT_HOME_STAGE_DETAIL_TAB_ID,
+  };
+}
+
 function createPotionViewState() {
   return {
     phase: "tutorial",
@@ -195,6 +229,10 @@ function createFreshPotionSession() {
 
 function handleRouteChange() {
   state.route = getCurrentRoute();
+  if (state.route !== "/") {
+    state.home.selectedStageGameId = null;
+    state.home.selectedStageDetailTabId = DEFAULT_HOME_STAGE_DETAIL_TAB_ID;
+  }
   ensurePotionLoopForCurrentState();
   renderApp();
 }
@@ -239,6 +277,32 @@ function handleRootClick(event) {
     case "navigate": {
       const route = actionElement.dataset.route;
       if (route) {
+        navigate(route);
+      }
+      break;
+    }
+    case "open-stage-detail": {
+      const gameId = actionElement.dataset.gameId;
+      if (gameId) {
+        openHomeStageDetail(gameId);
+      }
+      break;
+    }
+    case "close-stage-detail": {
+      closeHomeStageDetail();
+      break;
+    }
+    case "select-stage-detail-tab": {
+      const tabId = actionElement.dataset.tabId;
+      if (tabId) {
+        setHomeStageDetailTab(tabId);
+      }
+      break;
+    }
+    case "start-stage-route": {
+      const route = actionElement.dataset.route;
+      if (route) {
+        closeHomeStageDetail({ shouldRender: false });
         navigate(route);
       }
       break;
@@ -289,6 +353,89 @@ function getActionElementFromTarget(target) {
 
 function syncPotionChoiceHoverFromPointer() {
   setPotionHoveredChoiceColor(getPotionHoveredChoiceColorFromPointer());
+}
+
+function getAssessmentStageGameById(gameId) {
+  return ASSESSMENT_STAGE_GAMES.find((game) => game.id === gameId) ?? null;
+}
+
+function getSelectedAssessmentStageGame() {
+  return getAssessmentStageGameById(state.home.selectedStageGameId);
+}
+
+function openHomeStageDetail(gameId) {
+  const game = getAssessmentStageGameById(gameId);
+  if (!game?.route) {
+    return;
+  }
+
+  state.home.selectedStageGameId = game.id;
+  state.home.selectedStageDetailTabId =
+    game.detailTabs?.[0]?.id ?? DEFAULT_HOME_STAGE_DETAIL_TAB_ID;
+  renderApp();
+}
+
+function closeHomeStageDetail({ shouldRender = true } = {}) {
+  if (!state.home.selectedStageGameId) {
+    return;
+  }
+
+  state.home.selectedStageGameId = null;
+  state.home.selectedStageDetailTabId = DEFAULT_HOME_STAGE_DETAIL_TAB_ID;
+
+  if (shouldRender) {
+    renderApp();
+  }
+}
+
+function setHomeStageDetailTab(tabId) {
+  const selectedGame = getSelectedAssessmentStageGame();
+  const matchingTab = selectedGame?.detailTabs?.find((tab) => tab.id === tabId);
+
+  if (!matchingTab || state.home.selectedStageDetailTabId === tabId) {
+    return;
+  }
+
+  state.home.selectedStageDetailTabId = matchingTab.id;
+  if (!syncHomeStageDetailTabUi()) {
+    renderApp();
+  }
+}
+
+function syncHomeStageDetailTabUi() {
+  if (!rootElement || state.route !== "/" || !state.home.selectedStageGameId) {
+    return false;
+  }
+
+  const selectedGame = getSelectedAssessmentStageGame();
+  const selectedTab =
+    selectedGame?.detailTabs?.find(
+      (tab) => tab.id === state.home.selectedStageDetailTabId,
+    ) ?? selectedGame?.detailTabs?.[0];
+  const panelSlotElement = rootElement.querySelector(
+    ".assessment-stage-drawer__panel-slot",
+  );
+  const tabButtons = rootElement.querySelectorAll(
+    ".assessment-stage-drawer__tab[data-tab-id]",
+  );
+
+  if (!selectedGame || !selectedTab || !(panelSlotElement instanceof Element)) {
+    return false;
+  }
+
+  for (const tabButton of tabButtons) {
+    if (!(tabButton instanceof Element)) {
+      continue;
+    }
+
+    const isActive =
+      tabButton.getAttribute("data-tab-id") === selectedTab.id;
+    tabButton.classList.toggle("is-active", isActive);
+    tabButton.setAttribute("aria-pressed", isActive ? "true" : "false");
+  }
+
+  panelSlotElement.innerHTML = renderAssessmentStageDetailTabPanel(selectedTab);
+  return true;
 }
 
 function getPotionHoveredChoiceColorFromPointer() {
@@ -732,9 +879,12 @@ function renderNavLink(route, label) {
 }
 
 function renderHomePage() {
+  const selectedGame = getSelectedAssessmentStageGame();
+  const hasStageDetail = Boolean(selectedGame);
+
   return `
     <section class="assessment-home">
-      <div class="assessment-home__board">
+      <div class="assessment-home__board ${hasStageDetail ? "has-stage-detail" : ""}">
         <aside class="assessment-home__sidebar" aria-label="평가 영역">
           <nav class="assessment-home__menu">
             <span class="assessment-home__menu-item is-muted">성향파악</span>
@@ -750,6 +900,7 @@ function renderHomePage() {
             </div>
           </div>
         </section>
+        ${selectedGame ? renderAssessmentStageDetailDrawer(selectedGame) : ""}
       </div>
     </section>
   `;
@@ -777,9 +928,11 @@ function renderAssessmentStageCard(game) {
       <button
         type="button"
         class="assessment-stage-card is-active"
-        data-action="navigate"
-        data-route="${game.route}"
-        aria-label="${game.title} 열기"
+        data-action="open-stage-detail"
+        data-game-id="${game.id}"
+        aria-haspopup="dialog"
+        aria-expanded="${state.home.selectedStageGameId === game.id ? "true" : "false"}"
+        aria-label="${game.title} 상세 정보 열기"
       >
         ${cardInnerMarkup}
       </button>
@@ -790,6 +943,164 @@ function renderAssessmentStageCard(game) {
     <article class="assessment-stage-card is-disabled" aria-label="${game.title} 소개 카드">
       ${cardInnerMarkup}
     </article>
+  `;
+}
+
+function renderAssessmentStageDetailDrawer(game) {
+  const tab =
+    game.detailTabs?.find(
+      (detailTab) => detailTab.id === state.home.selectedStageDetailTabId,
+    ) ?? game.detailTabs?.[0];
+
+  return `
+    <div class="assessment-home__detail-layer">
+      <button
+        type="button"
+        class="assessment-home__detail-backdrop"
+        data-action="close-stage-detail"
+        aria-label="${game.title} 상세 패널 닫기"
+      ></button>
+      <aside
+        class="assessment-stage-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assessment-stage-drawer-title"
+      >
+        <header class="assessment-stage-drawer__header">
+          <button
+            type="button"
+            class="assessment-stage-drawer__back"
+            data-action="close-stage-detail"
+          >
+            <span aria-hidden="true">‹</span>
+            <span>뒤로</span>
+          </button>
+        </header>
+        <div class="assessment-stage-drawer__body">
+          <div class="assessment-stage-drawer__title-row">
+            <div>
+              <h2 id="assessment-stage-drawer-title">${game.title}</h2>
+              <p class="assessment-stage-drawer__summary">${game.detailSummary ?? ""}</p>
+            </div>
+            <div class="assessment-stage-drawer__badge" aria-hidden="true">
+              ${renderAssessmentStageIcon(game.icon)}
+            </div>
+          </div>
+          <div class="assessment-stage-drawer__meta">
+            ${(game.detailMeta ?? []).map((item) => `<span>${item}</span>`).join("")}
+          </div>
+          <div class="assessment-stage-drawer__artwork" aria-hidden="true">
+            ${renderAssessmentStageDrawerArtwork(game.icon)}
+          </div>
+          <nav class="assessment-stage-drawer__tabs" aria-label="${game.title} 안내 탭">
+            ${(game.detailTabs ?? [])
+              .map(
+                (detailTab) => `
+                  <button
+                    type="button"
+                    class="assessment-stage-drawer__tab ${detailTab.id === tab?.id ? "is-active" : ""}"
+                    data-action="select-stage-detail-tab"
+                    data-tab-id="${detailTab.id}"
+                    aria-pressed="${detailTab.id === tab?.id ? "true" : "false"}"
+                  >
+                    ${detailTab.label}
+                  </button>
+                `,
+              )
+              .join("")}
+          </nav>
+          <div class="assessment-stage-drawer__panel-slot">
+            ${renderAssessmentStageDetailTabPanel(tab)}
+          </div>
+        </div>
+        <footer class="assessment-stage-drawer__footer">
+          <button
+            type="button"
+            class="assessment-stage-drawer__action assessment-stage-drawer__action--secondary"
+            data-action="close-stage-detail"
+          >
+            닫기
+          </button>
+          <button
+            type="button"
+            class="assessment-stage-drawer__action assessment-stage-drawer__action--primary"
+            data-action="start-stage-route"
+            data-route="${game.route ?? ""}"
+          >
+            실전 시작
+          </button>
+        </footer>
+      </aside>
+    </div>
+  `;
+}
+
+function renderAssessmentStageDetailTabPanel(tab) {
+  if (!tab) {
+    return "";
+  }
+
+  return `
+    <section class="assessment-stage-drawer__panel">
+      <p class="assessment-stage-drawer__panel-eyebrow">${tab.label}</p>
+      <h3>${tab.title}</h3>
+      ${(tab.paragraphs ?? [])
+        .map((paragraph) => `<p>${paragraph}</p>`)
+        .join("")}
+      ${
+        tab.bullets?.length
+          ? `
+            <ul class="assessment-stage-drawer__panel-list">
+              ${tab.bullets.map((bullet) => `<li>${bullet}</li>`).join("")}
+            </ul>
+          `
+          : ""
+      }
+    </section>
+  `;
+}
+
+function renderAssessmentStageDrawerArtwork(icon) {
+  if (icon !== "potion") {
+    return `
+      <div class="assessment-stage-drawer__artwork-fallback">
+        ${renderAssessmentStageIcon(icon)}
+      </div>
+    `;
+  }
+
+  return `
+    <svg class="assessment-stage-drawer-artwork" viewBox="0 0 320 160">
+      <rect class="assessment-stage-drawer-artwork__bg" x="0" y="0" width="320" height="160" rx="20"></rect>
+      <path class="assessment-stage-drawer-artwork__line" d="M18 52c38-24 94-28 150-4c39 16 84 20 132-2"></path>
+      <path class="assessment-stage-drawer-artwork__line" d="M20 122c45-18 96-16 156 6c42 15 86 13 124-4"></path>
+      <g class="assessment-stage-drawer-artwork__cauldron">
+        <ellipse cx="92" cy="119" rx="44" ry="14"></ellipse>
+        <path d="M52 82h80l-8 40H60z"></path>
+        <path d="M60 82c0-10 8-18 18-18h28c10 0 18 8 18 18"></path>
+        <path d="M56 121c-10 0-18 8-18 18"></path>
+      </g>
+      <g class="assessment-stage-drawer-artwork__brew">
+        <circle cx="80" cy="74" r="18"></circle>
+        <circle cx="100" cy="69" r="12"></circle>
+        <circle cx="117" cy="76" r="16"></circle>
+        <circle cx="137" cy="88" r="12"></circle>
+      </g>
+      <g class="assessment-stage-drawer-artwork__hand">
+        <path d="M48 74c-10-2-21 3-28 13l22 9z"></path>
+        <path d="M83 32c-6-2-12 2-13 8l-8 40l19 5l13-37c2-7-3-14-11-16z"></path>
+      </g>
+      <g class="assessment-stage-drawer-artwork__flask">
+        <path d="M218 26h28v20h-28z"></path>
+        <path d="M204 46h56l-8 24l25 32c12 15 1 38-18 38h-54c-19 0-30-23-18-38l25-32z"></path>
+        <path d="M207 113c13-8 28-6 43 5c13 10 28 13 43 7c0 12-10 21-24 21h-44c-14 0-24-15-18-33z"></path>
+        <text x="232" y="112">?</text>
+      </g>
+      <circle class="assessment-stage-drawer-artwork__dot is-green" cx="188" cy="58" r="4"></circle>
+      <circle class="assessment-stage-drawer-artwork__dot is-red" cx="166" cy="88" r="4"></circle>
+      <circle class="assessment-stage-drawer-artwork__dot is-yellow" cx="284" cy="82" r="5"></circle>
+      <circle class="assessment-stage-drawer-artwork__dot is-green" cx="176" cy="112" r="6"></circle>
+    </svg>
   `;
 }
 

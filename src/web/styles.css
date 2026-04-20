@@ -862,6 +862,8 @@ body[data-route="home"] .app-shell--home {
 }
 
 .assessment-home__board {
+  position: relative;
+  isolation: isolate;
   width: min(1120px, calc(100vw - clamp(24px, 5vw, 72px)));
   min-height: min(600px, calc(100vh - 56px));
   font-size: 0.9rem;
@@ -1031,6 +1033,366 @@ button.assessment-stage-card:focus-visible {
   fill: rgba(132, 209, 156, 0.18);
 }
 
+.assessment-home__detail-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.assessment-home__detail-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(36, 41, 49, 0.56);
+  cursor: pointer;
+  pointer-events: auto;
+  animation: assessment-home-backdrop-in 180ms ease;
+}
+
+.assessment-stage-drawer {
+  position: relative;
+  z-index: 1;
+  width: min(390px, calc(100% - 32px));
+  min-height: 100%;
+  background: rgba(255, 255, 255, 0.98);
+  border-left: 1px solid rgba(225, 229, 235, 0.9);
+  border-radius: 24px 30px 30px 24px;
+  box-shadow: -12px 0 36px rgba(72, 79, 88, 0.12);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  pointer-events: auto;
+  overflow: hidden;
+  animation: assessment-stage-drawer-in 240ms cubic-bezier(0.2, 0.8, 0.22, 1);
+}
+
+.assessment-stage-drawer__header,
+.assessment-stage-drawer__footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.assessment-stage-drawer__header {
+  justify-content: flex-start;
+  border-bottom: 1px solid rgba(231, 234, 238, 0.92);
+}
+
+.assessment-stage-drawer__footer {
+  justify-content: space-between;
+  border-top: 1px solid rgba(231, 234, 238, 0.92);
+}
+
+.assessment-stage-drawer__back,
+.assessment-stage-drawer__tab,
+.assessment-stage-drawer__action {
+  border: 0;
+  font: inherit;
+}
+
+.assessment-stage-drawer__back {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #f6f7f8;
+  color: #2a2d33;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.assessment-stage-drawer__back span[aria-hidden="true"] {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.assessment-stage-drawer__body {
+  min-height: 0;
+  padding: 20px 20px 22px;
+  overflow: auto;
+}
+
+.assessment-stage-drawer__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.assessment-stage-drawer__title-row h2 {
+  margin: 0;
+  color: #1f242b;
+  font-size: 2rem;
+  line-height: 1.08;
+  letter-spacing: -0.06em;
+}
+
+.assessment-stage-drawer__summary {
+  margin: 10px 0 0;
+  color: #69737d;
+  font-size: 0.95rem;
+  line-height: 1.62;
+}
+
+.assessment-stage-drawer__badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fff071 0%, #faea50 100%);
+  box-shadow: 0 14px 22px rgba(248, 232, 91, 0.36);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.assessment-stage-drawer__badge .assessment-stage-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.assessment-stage-drawer__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+  color: #8f98a2;
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.assessment-stage-drawer__meta span:first-child {
+  color: #80d78f;
+}
+
+.assessment-stage-drawer__artwork {
+  margin-top: 18px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.assessment-stage-drawer__artwork-fallback {
+  min-height: 180px;
+  background: linear-gradient(180deg, #ffebb0 0%, #ffe394 100%);
+  display: grid;
+  place-items: center;
+}
+
+.assessment-stage-drawer__artwork-fallback .assessment-stage-icon {
+  width: 84px;
+  height: 84px;
+}
+
+.assessment-stage-drawer__tabs {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.assessment-stage-drawer__tab {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #eef1f4;
+  color: #7a8490;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.assessment-stage-drawer__tab.is-active {
+  background: #2b2f35;
+  color: #ffffff;
+}
+
+.assessment-stage-drawer__tab:hover {
+  transform: translateY(-1px);
+}
+
+.assessment-stage-drawer__panel {
+  margin-top: 14px;
+  padding: 18px 18px 20px;
+  border-radius: 20px;
+  background: #f7f8fa;
+}
+
+.assessment-stage-drawer__panel-eyebrow {
+  margin: 0 0 8px;
+  color: #86d59a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.assessment-stage-drawer__panel h3 {
+  margin: 0;
+  color: #20242b;
+  font-size: 1.12rem;
+  line-height: 1.35;
+}
+
+.assessment-stage-drawer__panel p {
+  margin: 12px 0 0;
+  color: #626d78;
+  line-height: 1.7;
+}
+
+.assessment-stage-drawer__panel-list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.assessment-stage-drawer__panel-list li {
+  position: relative;
+  padding-left: 18px;
+  color: #46515d;
+  line-height: 1.6;
+}
+
+.assessment-stage-drawer__panel-list li::before {
+  content: "";
+  position: absolute;
+  top: 0.65em;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #55c8bc;
+  transform: translateY(-50%);
+}
+
+.assessment-stage-drawer__action {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    filter 140ms ease;
+}
+
+.assessment-stage-drawer__action:hover {
+  transform: translateY(-1px);
+}
+
+.assessment-stage-drawer__action--secondary {
+  background: #4c5058;
+  color: #ffffff;
+}
+
+.assessment-stage-drawer__action--primary {
+  margin-left: auto;
+  background: linear-gradient(135deg, #4ed1c2 0%, #53c2a4 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 20px rgba(83, 194, 164, 0.22);
+}
+
+.assessment-stage-drawer-artwork {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.assessment-stage-drawer-artwork__bg {
+  fill: #ffe7a2;
+}
+
+.assessment-stage-drawer-artwork__line {
+  fill: none;
+  stroke: rgba(182, 153, 92, 0.28);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.assessment-stage-drawer-artwork__cauldron ellipse {
+  fill: #3a4545;
+  opacity: 0.22;
+}
+
+.assessment-stage-drawer-artwork__cauldron path {
+  fill: #2f403f;
+}
+
+.assessment-stage-drawer-artwork__brew circle {
+  fill: #78c07b;
+}
+
+.assessment-stage-drawer-artwork__hand path:first-child {
+  fill: #f4f5f6;
+}
+
+.assessment-stage-drawer-artwork__hand path:last-child {
+  fill: #f3b2a0;
+}
+
+.assessment-stage-drawer-artwork__flask path:first-child {
+  fill: #fcf8f0;
+}
+
+.assessment-stage-drawer-artwork__flask path:nth-child(2) {
+  fill: #2d7b6f;
+}
+
+.assessment-stage-drawer-artwork__flask path:nth-child(3) {
+  fill: #f07a75;
+}
+
+.assessment-stage-drawer-artwork__flask text {
+  fill: #ffffff;
+  font-size: 34px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.assessment-stage-drawer-artwork__dot.is-green {
+  fill: #67c792;
+}
+
+.assessment-stage-drawer-artwork__dot.is-red {
+  fill: #e77569;
+}
+
+.assessment-stage-drawer-artwork__dot.is-yellow {
+  fill: #f1dc60;
+}
+
+@keyframes assessment-home-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes assessment-stage-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @media (max-width: 1120px) {
   .assessment-home__board {
     width: min(980px, calc(100vw - 40px));
@@ -1095,6 +1457,17 @@ button.assessment-stage-card:focus-visible {
   .assessment-stage-icon {
     width: 34px;
     height: 34px;
+  }
+
+  .assessment-home__detail-layer {
+    padding: 12px;
+    justify-content: stretch;
+  }
+
+  .assessment-stage-drawer {
+    width: 100%;
+    min-height: 0;
+    border-radius: 24px;
   }
 }
 
