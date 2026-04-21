@@ -5,7 +5,7 @@ import {
   POTION_SETTING_DEFINITIONS,
   getPotionStageDetailContent,
 } from "../../src/web/shared/potion-content.mjs";
-import { shouldResetPotionStateOnEntry } from "../../src/web/main.mjs";
+import { shouldResetPotionStateOnEntry } from "../../src/web/potion/state.mjs";
 
 test("potion stage drawer copy hides dominant-probability wording", () => {
   const detailContent = getPotionStageDetailContent({

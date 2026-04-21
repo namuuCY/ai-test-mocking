@@ -18,9 +18,9 @@
 ## Current Status
 
 - Last updated: `2026-04-21`
-- Current phase: `Phase 5 - React runtime shell 도입`
-- Overall status: `Phase 3 close-out과 Phase 4 단일 소스 정리 완료; main.mjs는 289줄까지 축소됐고 potion-engine은 src/games/potion thin wrapper로 정리됨`
-- Immediate next action: `Vite + React + React Router DOM(HashRouter) 셸을 추가하고 legacy route markup을 React 앱 바깥으로 밀어내기 시작`
+- Current phase: `Phase 8 완료`
+- Overall status: `React 앱이 유일한 실행 경로가 되었고 legacy main/runtime/string renderer 경로 제거, PotionGame 1차 분리, 초반 legacy CSS dead code 정리까지 마쳤다`
+- Immediate next action: `PotionGameView를 stage 파일 단위로 더 쪼개거나 남은 CSS 구간의 세부 dead selector를 계속 줄인다`
 
 ## Read Order For Future Sessions
 
@@ -35,10 +35,10 @@
 - [x] Phase 2. 홈/결과/시퀀스 문자열 렌더 함수 파일 분리
 - [x] Phase 3. 포션 web controller/state/render/timer 모듈 분리
 - [x] Phase 4. 포션 엔진 단일 소스 정리
-- [ ] Phase 5. React runtime shell 도입
-- [ ] Phase 6. Home / Results / Sequence React 전환
-- [ ] Phase 7. Potion React 전환
-- [ ] Phase 8. Legacy renderer 정리
+- [x] Phase 5. React runtime shell 도입
+- [x] Phase 6. Home / Results / Sequence React 전환
+- [x] Phase 7. Potion React 전환
+- [x] Phase 8. Legacy renderer 정리
 
 ## Working Checklist
 
@@ -65,7 +65,28 @@
 - [x] potion pointer hover glue를 `src/web/potion/controller.mjs`로 이동
 - [x] `src/games/potion/*.js`를 ESM 단일 소스로 정리
 - [x] `src/web/potion-engine.mjs`를 thin wrapper로 축소
-- [ ] Phase 5 React runtime shell scaffold (`package.json`, `src/app/*`, boot entry) 착수
+- [x] Phase 5 React runtime shell scaffold (`package.json`, `src/app/*`, boot entry) 착수
+- [x] React entry (`index.html` -> `src/app/boot.js`) 전환
+- [x] `HashRouter` 기반 route shell / top nav 추가
+- [x] `home` / `results` / `sequence` React route wrapper 추가
+- [x] potion legacy runtime bridge (`src/web/potion/runtime.mjs`) 추가
+- [x] wrapper 기반 static routes를 native React markup으로 치환 시작
+- [x] home route drawer/settings를 native React markup으로 치환
+- [x] results route를 native React markup으로 치환
+- [x] sequence route를 native React markup으로 치환
+- [x] `LegacyMarkupPage` 제거
+- [x] `PotionRoute` legacy runtime bridge 제거
+- [x] potion tutorial / playing / checking / finished UI를 native React markup으로 전환
+- [x] potion phase 전환 helper를 `src/app/features/potion/state-utils.js` 로 분리
+- [x] `tests/app/potion-state-utils.test.mjs` 추가
+- [x] legacy potion/runtime import graph 재확인
+- [x] `src/web/main.mjs` 및 legacy 문자열 renderer/runtime 파일 제거
+- [x] `tests/web/potion-copy.test.mjs` import를 `src/web/potion/state.mjs` 로 전환
+- [x] `npm run check:web`를 React runtime 기준 build 검증으로 단순화
+- [x] `PotionGame.js` 를 hook 조립자 수준으로 축소
+- [x] `usePotionGame.js` / `PotionGameView.js` 로 potion state/effect 와 view 트리 분리
+- [x] `src/web/styles.css` 초반 legacy generic layout selector 정리
+- [x] 미사용 potion choice `is-selected` selector 제거
 
 ## Current Decisions
 
@@ -78,66 +99,60 @@
 
 ## Current Technical Debt To Resolve
 
-### 1. Legacy Boot Shell
-
-- [src/web/main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1) 는 많이 줄었지만 여전히 legacy 앱 부트스트랩, 전역 이벤트 위임, 문자열 route dispatch를 담당한다.
-
-### 2. React Runtime Missing
-
-- 아직 React / Vite / React Router DOM 기반 앱 셸이 없다.
-
-### 3. Global CSS Coupling
+### 1. Global CSS Coupling
 
 - [src/web/styles.css](/Users/namucy/Develop/ai-test-mocking/src/web/styles.css:1) 의 전역 selector가 많아 마크업 변경 시 회귀 위험이 크다.
+- 초기 legacy renderer 전용 generic block은 걷어냈지만, 여전히 route별 전역 selector와 큰 단일 파일 구조는 남아 있다.
+
+### 2. Potion View Granularity
+
+- [src/app/features/potion/PotionGameView.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/PotionGameView.js:1) 에 tutorial/question/finished stage와 하위 시각 컴포넌트가 아직 한 파일에 모여 있다.
+- 지금은 이전보다 경계가 선명하지만, 후속 수정이 많아지면 stage별 파일 분리를 한 번 더 고려할 수 있다.
 
 ## Next Action Candidates
 
 다음 세션에서 바로 시작할 수 있는 후보는 아래 2개다.
 
-### Option A. Phase 5 runtime shell
+### Option A. Potion stage component split
 
 목표:
 
-- React 앱 셸을 추가하고 기존 해시 라우트를 React 쪽으로 넘길 최소 부트스트랩을 만든다.
+- 이미 분리된 potion feature view를 stage/component 파일 단위로 더 잘게 나눈다.
 
 대상:
 
-- `package.json`
-- `index.html`
-- `src/app/*` 또는 이에 준하는 새 앱 진입점
-- `src/web/main.mjs`
+- `src/app/features/potion/PotionGameView.js`
+- 신규 stage/component 파일들
 
 장점:
 
-- 이후 Home / Results / Sequence를 React route로 옮길 기반이 바로 생긴다.
-- legacy 렌더러와 새 React 셸의 공존 전략을 초기에 명확히 할 수 있다.
+- tutorial/question/finished stage별 수정과 테스트 포인트를 더 독립적으로 관리할 수 있다.
 
-### Option B. Phase 6 static route spike
+### Option B. CSS dead code audit continuation
 
 목표:
 
-- Home / Results / Sequence 중 하나를 먼저 React 컴포넌트로 옮길 최소 실험을 설계한다.
+- legacy renderer 제거 이후 남은 전역 CSS 중 실제 React 마크업에서 더 이상 쓰지 않는 selector 범위를 점검한다.
 
 대상:
 
-- `src/web/pages/home-page.mjs`
-- `src/web/pages/results-page.mjs`
-- `src/web/pages/sequence-page.mjs`
-- 새 React page/component 파일
+- `src/web/styles.css`
+- `src/app/pages/*`
+- `src/app/features/potion/PotionGameView.js`
 
 장점:
 
-- React 셸 도입 직후 바로 low-risk route를 옮기는 기준을 선행 검토할 수 있다.
-- 정적 페이지를 먼저 전환할 때 필요한 prop/data 경계가 보인다.
+- 현재 남아 있는 가장 큰 회귀 리스크를 줄일 수 있다.
+- 이후 UI 수정 때 불필요한 전역 스타일 영향 범위를 좁힐 수 있다.
 
 ## Recommended Next Action
 
-현재 기준 추천은 `Option A를 먼저 시작`하는 것이다.
+현재 기준 추천은 `Option A를 먼저 진행`하는 것이다.
 
 즉, 다음 세션 첫 작업은 아래다.
 
-1. React/Vite/HashRouter 셸을 추가한다.
-2. legacy `main.mjs`가 React 부트스트랩 또는 fallback renderer만 담당하도록 첫 경계를 만든다.
+1. `src/app/features/potion/PotionGameView.js` 내부에서 tutorial/question/finished stage를 파일 단위로 분리할 경계를 정한다.
+2. 하위 아트/버튼 컴포넌트까지 같이 옮길지, stage 파일만 먼저 나눌지 결정해 작은 write scope부터 진행한다.
 
 ## Blocked / Deferred Items
 
@@ -158,16 +173,15 @@
 
 ## Handoff Snapshot
 
-- Last stable stopping point: `Phase 4 complete; main.mjs reduced to 289 lines and potion engine unified behind src/games/potion`
+- Last stable stopping point: `Phase 8 complete; React app is now the only runtime path and legacy main/runtime/string renderer files are removed`
 - Next file(s) to open:
   [react-migration-plan.md](/Users/namucy/Develop/ai-test-mocking/docs/react-migration-plan.md),
   [react-migration-log.md](/Users/namucy/Develop/ai-test-mocking/docs/react-migration-log.md),
-  [package.json](/Users/namucy/Develop/ai-test-mocking/package.json:1),
-  [main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1),
-  [src/web/potion-engine.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion-engine.mjs:1),
-  [src/games/potion/index.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/index.js:1),
-  [src/web/pages/home-controller.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/pages/home-controller.mjs:1)
-- Next first action: `React/Vite/HashRouter 런타임 셸을 추가하고 legacy main.mjs와의 공존 부트 경계를 잡기`
+  [PotionGame.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/PotionGame.js:1),
+  [usePotionGame.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/usePotionGame.js:1),
+  [PotionGameView.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/PotionGameView.js:1),
+  [styles.css](/Users/namucy/Develop/ai-test-mocking/src/web/styles.css:1)
+- Next first action: `PotionGameView를 읽고 stage/component 분리 순서를 정한 뒤 가장 독립적인 stage부터 파일로 뺀다`
 - If resuming after interruption:
   `Working Checklist`에서 진행 중 항목을 확인하고,
   막힌 이력이 있으면 `Blocked / Deferred Items`를 먼저 본다.
@@ -198,6 +212,24 @@
 - [package.json](/Users/namucy/Develop/ai-test-mocking/package.json:1) 에 `"type": "module"` 을 추가하고 [src/games/potion/index.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/index.js:1), [config.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/config.js:1), [combo.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/combo.js:1), [session.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/session.js:1), [scoring.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/scoring.js:1) 를 ESM 단일 소스로 정리했다.
 - [src/web/potion-engine.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion-engine.mjs:1) 는 이제 [src/games/potion/index.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/index.js:1) 를 재-export하는 thin wrapper만 담당한다.
 - [tests/potion/scoring.test.js](/Users/namucy/Develop/ai-test-mocking/tests/potion/scoring.test.js:1), [tests/potion/session.test.js](/Users/namucy/Develop/ai-test-mocking/tests/potion/session.test.js:1) 를 ESM import로 바꿨고, 다시 `npm test`, `npm run check:web`를 통과했다.
+- `index.html` 기본 진입점을 [src/app/boot.js](/Users/namucy/Develop/ai-test-mocking/src/app/boot.js:1) 로 바꾸고, [vite.config.mjs](/Users/namucy/Develop/ai-test-mocking/vite.config.mjs:1), `dev/build/preview/check:web` 스크립트를 추가해 Vite 기반 React 런타임 셸을 올렸다.
+- [src/app/App.js](/Users/namucy/Develop/ai-test-mocking/src/app/App.js:1), [TopNav.js](/Users/namucy/Develop/ai-test-mocking/src/app/components/TopNav.js:1), [HomeRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/HomeRoute.js:1), [ResultsRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/ResultsRoute.js:1), [SequenceRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/SequenceRoute.js:1) 를 추가해 `HashRouter` 기반 React route shell을 만들었다.
+- `home`, `results`, `sequence` 는 일단 legacy page renderer를 React route wrapper에서 재사용하도록 연결해 route/state/navigation은 React 쪽으로 넘겼다.
+- [src/web/potion/runtime.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/runtime.mjs:1) 를 추가해 포션 화면은 별도 legacy runtime bridge로 마운트되도록 분리했고, React 앱이 potion 설정 변경과 결과 저장 상태를 같이 들고 있게 만들었다.
+- 이번 단계 이후 다시 `npm test`, `npm run check:web` 를 통과했고 Vite production build 산출물까지 생성되는 것을 확인했다.
+- [src/app/components/AssessmentStageArt.js](/Users/namucy/Develop/ai-test-mocking/src/app/components/AssessmentStageArt.js:1) 를 추가해 홈/결과 화면에서 쓰는 stage icon 및 drawer artwork를 React 컴포넌트로 옮겼다.
+- [HomeRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/HomeRoute.js:1), [ResultsRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/ResultsRoute.js:1), [SequenceRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/SequenceRoute.js:1) 의 legacy string renderer 의존을 제거하고 같은 CSS class를 유지하는 native React markup으로 치환했다.
+- 더 이상 필요 없어진 `src/app/components/LegacyMarkupPage.js` 를 제거했다.
+- static route conversion 이후에도 다시 `npm test`, `npm run check:web` 를 통과했다.
+- [src/app/features/potion/PotionGame.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/PotionGame.js:1), [state-utils.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/state-utils.js:1) 를 추가해 potion phase/state/effect/render 를 React 쪽으로 옮겼고, [src/app/pages/PotionRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/PotionRoute.js:1) 는 더 이상 [src/web/potion/runtime.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/runtime.mjs:1) 를 mount 하지 않게 바꿨다.
+- 새 React potion route는 tutorial 자동 시작, playing 타이머, checking 피드백 진행, finished 자동 이동, 결과 저장(local storage + App state callback)까지 기존 UX 흐름을 그대로 유지하도록 재조립했다.
+- [tests/app/potion-state-utils.test.mjs](/Users/namucy/Develop/ai-test-mocking/tests/app/potion-state-utils.test.mjs:1) 를 추가해 settings sync 와 checking/finished phase 전환 helper 를 검증했고, 다시 `npm test`, `npm run check:web` 를 통과했다.
+- `src/web/main.mjs`, `src/web/potion/runtime.mjs`, `src/web/potion/controller.mjs`, `src/web/potion/renderers.mjs` 와 거기에만 연결돼 있던 legacy 문자열 page/component 파일들을 제거해 React 앱만 남겼다.
+- `tests/web/potion-copy.test.mjs` 는 이제 `shouldResetPotionStateOnEntry` 를 [src/web/potion/state.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/state.mjs:1) 에서 직접 검증한다.
+- `npm run check:web` 는 legacy import smoke 대신 React runtime 기준 `vite build` 확인만 수행하도록 정리했다.
+- [src/app/features/potion/usePotionGame.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/usePotionGame.js:1), [PotionGameView.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/PotionGameView.js:1) 를 추가해 potion feature 를 state/effect 와 render tree 기준으로 1차 분리했다.
+- [src/web/styles.css](/Users/namucy/Develop/ai-test-mocking/src/web/styles.css:1) 에 남아 있던 초반 legacy generic layout block(`hero-panel`, `game-shell`, `results-page`, `game-card`, `answer-button`, `feedback-panel` 등) 을 제거하고 현재 React route에서 실제 쓰는 `top-nav`, `placeholder`, `game-header` 계열만 남겼다.
+- 포션 choice button의 unused `is-selected` selector도 제거했고, build 결과 CSS 번들은 약 `44.8 kB` 에서 `36.1 kB` 로 줄었다.
 
 ## Agent Note
 

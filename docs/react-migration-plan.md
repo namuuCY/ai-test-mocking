@@ -8,13 +8,29 @@
 
 다음 세션에서는 전체 코드를 다시 훑기 전에 이 문서를 먼저 읽는다.
 
+## Status Note
+
+- `2026-04-21` 기준 `Phase 8` 까지 완료됐다.
+- React 앱이 현재 유일한 실행 경로이며 legacy `main.mjs` 와 문자열 renderer/runtime 파일들은 제거됐다.
+- 아래 phase 설명은 어떤 순서로 여기까지 왔는지 보여주는 기준 기록으로 유지한다.
+
 ## Primary Files
 
 - [index.html](/Users/namucy/Develop/ai-test-mocking/index.html)
-- [src/web/main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs)
+- [src/app/boot.js](/Users/namucy/Develop/ai-test-mocking/src/app/boot.js)
+- [src/app/App.js](/Users/namucy/Develop/ai-test-mocking/src/app/App.js)
+- [src/app/components/TopNav.js](/Users/namucy/Develop/ai-test-mocking/src/app/components/TopNav.js)
+- [src/app/pages/HomeRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/HomeRoute.js)
+- [src/app/pages/ResultsRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/ResultsRoute.js)
+- [src/app/pages/SequenceRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/SequenceRoute.js)
+- [src/app/pages/PotionRoute.js](/Users/namucy/Develop/ai-test-mocking/src/app/pages/PotionRoute.js)
+- [src/app/features/potion/PotionGame.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/PotionGame.js)
+- [src/app/features/potion/state-utils.js](/Users/namucy/Develop/ai-test-mocking/src/app/features/potion/state-utils.js)
 - [src/web/styles.css](/Users/namucy/Develop/ai-test-mocking/src/web/styles.css)
 - [src/web/storage.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/storage.mjs)
 - [src/web/potion-engine.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion-engine.mjs)
+- [src/web/potion/state.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/state.mjs)
+- [src/web/potion/timers.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/timers.mjs)
 - [src/games/potion/index.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/index.js)
 - [src/games/potion/config.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/config.js)
 - [src/games/potion/combo.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/combo.js)
@@ -58,37 +74,37 @@
 
 ### 1. Entry / Runtime
 
-- `index.html`에서 `#app` 하나만 두고 `src/web/main.mjs`를 직접 로드한다.
-- 별도 번들러나 dev server가 없다.
-- package script는 `node --test`와 간단한 web import check만 있다.
+- `index.html`에서 `#app` 하나를 두고 `src/app/boot.js`를 로드한다.
+- React 앱은 `createRoot`로 마운트된다.
+- `package.json` 기준 `vite` dev/build/preview 흐름이 기본이다.
 
 ### 2. Frontend Composition
 
-- `src/web/main.mjs` 한 파일에 메타데이터, 전역 상태, 이벤트 처리, 해시 라우팅, 타이머, 렌더 함수가 모두 들어 있다.
-- 홈, 결과, 포션, 시퀀스 placeholder 화면이 모두 같은 파일에서 문자열 템플릿으로 렌더된다.
-- 렌더는 `innerHTML` 기반 전체 재렌더링이다.
+- 최상위 route shell 은 [src/app/App.js](/Users/namucy/Develop/ai-test-mocking/src/app/App.js:1) 가 관리한다.
+- 화면 단위는 `src/app/pages/*`, 포션 전용 UI 흐름은 `src/app/features/potion/PotionGame.js` 로 분리돼 있다.
+- 문자열 템플릿 기반 legacy renderer 는 제거됐고 현재 렌더는 전부 React 컴포넌트 기준이다.
 
 ### 3. Routing
 
-- 현재 라우팅은 수동 해시 라우팅이다.
-- 실제 route는 `/`, `/games/potion`, `/games/sequence`, `/results` 정도다.
-- 추후 React 전환 시 GitHub Pages 호환성을 위해 `HashRouter` 유지가 기본값이다.
+- 라우팅은 `react-router-dom` 의 `HashRouter` 로 관리한다.
+- 실제 route는 `/`, `/games/potion`, `/games/sequence`, `/results` 다.
+- GitHub Pages 호환성 때문에 `HashRouter` 유지가 기본값이다.
 
 ### 4. State and Effects
 
-- 상태는 `main.mjs` 내부 전역 `state` 객체 하나다.
-- 포션 게임은 `tutorial -> playing -> checking -> finished` 흐름을 가진다.
-- 타이머와 animation frame도 UI 파일 안에 직접 존재한다.
+- 앱 수준 상태는 `App.js` 가 결과 목록과 포션 설정을 보유한다.
+- 포션 게임은 React state/effect 로 `tutorial -> playing -> checking -> finished` 흐름을 관리한다.
+- 포션 전용 상태 생성과 타이머 계산 helper 는 [src/web/potion/state.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/state.mjs:1), [src/web/potion/timers.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/timers.mjs:1) 에 남겨 재사용한다.
 
 ### 5. Styling
 
 - `src/web/styles.css` 단일 전역 CSS 파일이 전 페이지 스타일을 모두 가진다.
-- 현재 전환 초반에는 CSS 구조를 크게 건드리지 않고 재사용한다.
+- React 전환 이후에도 CSS 구조는 크게 바꾸지 않고 재사용하고 있다.
 
 ### 6. Domain Logic
 
-- 브라우저용 `src/web/potion-engine.mjs`와 테스트용 `src/games/potion/*`가 거의 같은 역할을 이중으로 가진다.
-- 이 중복은 React 전환 이전에 정리해야 할 핵심 기술 부채다.
+- 포션 규칙/세션/채점 로직의 단일 소스는 `src/games/potion/*` 다.
+- [src/web/potion-engine.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion-engine.mjs:1) 는 브라우저 import 안정성을 위한 thin wrapper만 유지한다.
 
 ## Migration Principles
 
