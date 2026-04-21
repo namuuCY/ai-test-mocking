@@ -1,17 +1,17 @@
-const {
+export {
   DEFAULT_POTION_GAME_CONFIG,
   DEFAULT_POTION_INGREDIENTS,
   createPotionGameConfig,
   getPotionDominantColorProbabilityForQuestionCount,
   validatePotionGameConfig,
-} = require("./config");
-const { buildPotionComboCatalog } = require("./combo");
-const {
+} from "./config.js";
+export { buildPotionComboCatalog } from "./combo.js";
+export {
   getPotionSpeedBandScore,
   getPotionVisibleResult,
   scorePotionPracticeSession,
-} = require("./scoring");
-const {
+} from "./scoring.js";
+export {
   createPotionDominantColorMap,
   createPotionQuestionPlan,
   createPotionSession,
@@ -19,23 +19,4 @@ const {
   samplePotionActualColor,
   submitPotionAnswer,
   timeoutPotionQuestion,
-} = require("./session");
-
-module.exports = {
-  DEFAULT_POTION_GAME_CONFIG,
-  DEFAULT_POTION_INGREDIENTS,
-  buildPotionComboCatalog,
-  createPotionDominantColorMap,
-  createPotionGameConfig,
-  getPotionDominantColorProbabilityForQuestionCount,
-  createPotionQuestionPlan,
-  createPotionSession,
-  getPotionSpeedBandScore,
-  getPotionCurrentQuestion,
-  getPotionVisibleResult,
-  samplePotionActualColor,
-  scorePotionPracticeSession,
-  submitPotionAnswer,
-  timeoutPotionQuestion,
-  validatePotionGameConfig,
-};
+} from "./session.js";

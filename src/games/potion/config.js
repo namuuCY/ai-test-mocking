@@ -1,8 +1,28 @@
-const DEFAULT_POTION_INGREDIENTS = Object.freeze([
-  Object.freeze({ id: "ingredient-1", label: "Ingredient 1" }),
-  Object.freeze({ id: "ingredient-2", label: "Ingredient 2" }),
-  Object.freeze({ id: "ingredient-3", label: "Ingredient 3" }),
-  Object.freeze({ id: "ingredient-4", label: "Ingredient 4" }),
+export const DEFAULT_POTION_INGREDIENTS = Object.freeze([
+  Object.freeze({
+    id: "ingredient-1",
+    label: "재료 1",
+    accent: "ember",
+    art: "seed",
+  }),
+  Object.freeze({
+    id: "ingredient-2",
+    label: "재료 2",
+    accent: "moss",
+    art: "mint",
+  }),
+  Object.freeze({
+    id: "ingredient-3",
+    label: "재료 3",
+    accent: "crystal",
+    art: "grass",
+  }),
+  Object.freeze({
+    id: "ingredient-4",
+    label: "재료 4",
+    accent: "mist",
+    art: "wing",
+  }),
 ]);
 
 const DOMINANT_COLOR_PROBABILITY_FALLBACK = 0.8;
@@ -11,7 +31,7 @@ const DOMINANT_COLOR_PROBABILITY_MAX_QUESTION_COUNT = 100;
 const DOMINANT_COLOR_PROBABILITY_AT_MIN_QUESTION_COUNT = 0.95;
 const DOMINANT_COLOR_PROBABILITY_AT_MAX_QUESTION_COUNT = 0.8;
 
-const DEFAULT_POTION_GAME_CONFIG = deepFreeze({
+export const DEFAULT_POTION_GAME_CONFIG = deepFreeze({
   introAutoStartSec: 9,
   sessionQuestionCount: 100,
   questionTimeLimitSec: 3,
@@ -50,7 +70,7 @@ const DEFAULT_POTION_GAME_CONFIG = deepFreeze({
   },
 });
 
-function createPotionGameConfig(overrides = {}) {
+export function createPotionGameConfig(overrides = {}) {
   const hasExplicitDominantColorProbability = Object.prototype.hasOwnProperty.call(
     overrides,
     "dominantColorProbability",
@@ -89,7 +109,7 @@ function createPotionGameConfig(overrides = {}) {
   return deepFreeze(config);
 }
 
-function getPotionDominantColorProbabilityForQuestionCount(questionCount) {
+export function getPotionDominantColorProbabilityForQuestionCount(questionCount) {
   if (!Number.isFinite(questionCount)) {
     throw new Error("questionCount must be a finite number.");
   }
@@ -114,7 +134,7 @@ function getPotionDominantColorProbabilityForQuestionCount(questionCount) {
   return Number(probability.toFixed(4));
 }
 
-function validatePotionGameConfig(config) {
+export function validatePotionGameConfig(config) {
   assertPositiveInteger(config.introAutoStartSec, "introAutoStartSec");
   assertPositiveInteger(config.sessionQuestionCount, "sessionQuestionCount");
   assertPositiveInteger(config.questionTimeLimitSec, "questionTimeLimitSec");
@@ -295,11 +315,3 @@ function deepFreeze(value) {
 
   return value;
 }
-
-module.exports = {
-  DEFAULT_POTION_GAME_CONFIG,
-  DEFAULT_POTION_INGREDIENTS,
-  createPotionGameConfig,
-  getPotionDominantColorProbabilityForQuestionCount,
-  validatePotionGameConfig,
-};

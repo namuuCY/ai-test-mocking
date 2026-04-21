@@ -2783,15 +2783,24 @@ body[data-route="potion"] .app-shell--potion {
   line-height: 1.55;
 }
 
+.potion-finished-card__hint {
+  margin: -8px 0 18px;
+  color: #7a7d85;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
 .potion-finished-card__button {
-  width: 160px;
-  height: 40px;
+  min-width: 188px;
+  height: 44px;
+  padding: 0 20px;
   border: 0;
   border-radius: 999px;
   background: #49be54;
   color: #ffffff;
-  font-size: 1.5rem;
+  font-size: 1rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
   box-shadow: 0 14px 26px rgba(81, 190, 88, 0.28);
 }
 

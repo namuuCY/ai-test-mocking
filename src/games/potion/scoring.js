@@ -1,7 +1,7 @@
-const { DEFAULT_POTION_GAME_CONFIG } = require("./config");
-const { buildPotionComboCatalog } = require("./combo");
+import { DEFAULT_POTION_GAME_CONFIG } from "./config.js";
+import { buildPotionComboCatalog } from "./combo.js";
 
-function scorePotionPracticeSession(questionResults, options = {}) {
+export function scorePotionPracticeSession(questionResults, options = {}) {
   if (!Array.isArray(questionResults)) {
     throw new Error("questionResults must be an array.");
   }
@@ -191,7 +191,10 @@ function scorePotionPracticeSession(questionResults, options = {}) {
   };
 }
 
-function getPotionVisibleResult(question, config = DEFAULT_POTION_GAME_CONFIG) {
+export function getPotionVisibleResult(
+  question,
+  config = DEFAULT_POTION_GAME_CONFIG,
+) {
   if (question.timedOut || question.selectedColor == null) {
     return config.timeoutVisibleResult;
   }
@@ -199,7 +202,10 @@ function getPotionVisibleResult(question, config = DEFAULT_POTION_GAME_CONFIG) {
   return question.selectedColor === question.actualColor ? "success" : "failure";
 }
 
-function getPotionSpeedBandScore(question, config = DEFAULT_POTION_GAME_CONFIG) {
+export function getPotionSpeedBandScore(
+  question,
+  config = DEFAULT_POTION_GAME_CONFIG,
+) {
   if (question.timedOut || question.selectedColor == null) {
     return config.timeoutSpeedScore;
   }
@@ -301,9 +307,3 @@ function isPotionColor(value) {
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
-
-module.exports = {
-  getPotionSpeedBandScore,
-  getPotionVisibleResult,
-  scorePotionPracticeSession,
-};

@@ -1,14 +1,14 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
+import test from "node:test";
+import assert from "node:assert/strict";
 
-const {
+import {
   DEFAULT_POTION_GAME_CONFIG,
   buildPotionComboCatalog,
   createPotionGameConfig,
   getPotionDominantColorProbabilityForQuestionCount,
   getPotionSpeedBandScore,
   scorePotionPracticeSession,
-} = require("../../src/games/potion");
+} from "../../src/games/potion/index.js";
 
 test("default config produces the observed 14-combo catalog", () => {
   const comboCatalog = buildPotionComboCatalog();

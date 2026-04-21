@@ -1,9 +1,9 @@
-const {
+import {
   DEFAULT_POTION_GAME_CONFIG,
   DEFAULT_POTION_INGREDIENTS,
-} = require("./config");
+} from "./config.js";
 
-function buildPotionComboCatalog(
+export function buildPotionComboCatalog(
   ingredients = DEFAULT_POTION_INGREDIENTS,
   config = DEFAULT_POTION_GAME_CONFIG,
 ) {
@@ -89,7 +89,3 @@ function assertComboCount(combos, expectedCount, sizeKey) {
     );
   }
 }
-
-module.exports = {
-  buildPotionComboCatalog,
-};

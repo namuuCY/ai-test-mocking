@@ -18,9 +18,9 @@
 ## Current Status
 
 - Last updated: `2026-04-21`
-- Current phase: `Phase 0 - Planning Baseline`
-- Overall status: `planning docs added, code migration not started`
-- Immediate next action: `Phase 1 시작 전 shared web module 분리 대상 확정`
+- Current phase: `Phase 5 - React runtime shell 도입`
+- Overall status: `Phase 3 close-out과 Phase 4 단일 소스 정리 완료; main.mjs는 289줄까지 축소됐고 potion-engine은 src/games/potion thin wrapper로 정리됨`
+- Immediate next action: `Vite + React + React Router DOM(HashRouter) 셸을 추가하고 legacy route markup을 React 앱 바깥으로 밀어내기 시작`
 
 ## Read Order For Future Sessions
 
@@ -31,10 +31,10 @@
 ## Migration Checklist
 
 - [x] Phase 0. 계획 문서와 진행 로그 추가
-- [ ] Phase 1. `main.mjs`에서 메타/라우트/포맷터/공용 상수 분리
-- [ ] Phase 2. 홈/결과/시퀀스 문자열 렌더 함수 파일 분리
-- [ ] Phase 3. 포션 web controller/state/render/timer 모듈 분리
-- [ ] Phase 4. 포션 엔진 단일 소스 정리
+- [x] Phase 1. `main.mjs`에서 메타/라우트/포맷터/공용 상수 분리
+- [x] Phase 2. 홈/결과/시퀀스 문자열 렌더 함수 파일 분리
+- [x] Phase 3. 포션 web controller/state/render/timer 모듈 분리
+- [x] Phase 4. 포션 엔진 단일 소스 정리
 - [ ] Phase 5. React runtime shell 도입
 - [ ] Phase 6. Home / Results / Sequence React 전환
 - [ ] Phase 7. Potion React 전환
@@ -46,11 +46,26 @@
 
 현재 활성 작업:
 
-- [ ] Phase 1 shared module 경계 확정
-- [ ] `GAME_META` / `ASSESSMENT_STAGE_GAMES` 분리 설계
-- [ ] format 함수 묶음 분리 설계
-- [ ] 포션 안내 copy 상수 분리 설계
-- [ ] `main.mjs`에서 첫 extraction 대상 줄 범위 확정
+- [x] Phase 1 shared module 경계 확정
+- [x] `GAME_META` / `ASSESSMENT_STAGE_GAMES` 분리
+- [x] format 함수 묶음 분리
+- [x] 포션 안내 copy / 설정 상수 분리
+- [x] `main.mjs`에서 첫 extraction 대상 줄 범위 확정
+- [x] `top-nav` / `home-page` / `results-page` / `sequence-page` 분리
+- [x] Phase 3 potion state / controller / timer 경계 확정
+- [x] potion route render helper 묶음 분리 순서 확정
+- [x] Phase 3 후보 모듈(`controller`, `state`, `timers`, `view`) 설계
+- [x] `src/web/potion/state.mjs` 추가
+- [x] `src/web/potion/controller.mjs` 추가
+- [x] `src/web/potion/timers.mjs` 추가
+- [x] `src/web/potion/renderers.mjs` 추가
+- [x] `main.mjs` 잔여 home/detail glue 범위 점검 후 Phase 3 종료 판단
+- [x] `src/web/pages/home-controller.mjs` 추가
+- [x] home stage icon / artwork 렌더러를 공용 컴포넌트로 분리
+- [x] potion pointer hover glue를 `src/web/potion/controller.mjs`로 이동
+- [x] `src/games/potion/*.js`를 ESM 단일 소스로 정리
+- [x] `src/web/potion-engine.mjs`를 thin wrapper로 축소
+- [ ] Phase 5 React runtime shell scaffold (`package.json`, `src/app/*`, boot entry) 착수
 
 ## Current Decisions
 
@@ -58,17 +73,18 @@
 - 초기 단계에서는 [src/web/styles.css](/Users/namucy/Develop/ai-test-mocking/src/web/styles.css:1) 를 유지한다.
 - 라우터는 최종적으로 `HashRouter` 유지가 기본값이다.
 - 포션 로직은 장기적으로 [src/games/potion/index.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/index.js:1) 계열을 단일 소스로 삼는 방향이 우선이다.
+- [src/web/potion-engine.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion-engine.mjs:1) 는 당분간 브라우저 import 안정성을 위한 thin wrapper만 유지한다.
 - 새 게임 추가보다 구조 안정화가 우선이다.
 
 ## Current Technical Debt To Resolve
 
-### 1. main.mjs Overload
+### 1. Legacy Boot Shell
 
-- [src/web/main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1) 가 상태, 이벤트, 라우팅, 렌더링, 타이머를 모두 가진다.
+- [src/web/main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1) 는 많이 줄었지만 여전히 legacy 앱 부트스트랩, 전역 이벤트 위임, 문자열 route dispatch를 담당한다.
 
-### 2. Potion Engine Duplication
+### 2. React Runtime Missing
 
-- [src/web/potion-engine.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion-engine.mjs:1) 와 [src/games/potion/index.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/index.js:1) 계열이 역할 중복 상태다.
+- 아직 React / Vite / React Router DOM 기반 앱 셸이 없다.
 
 ### 3. Global CSS Coupling
 
@@ -78,51 +94,50 @@
 
 다음 세션에서 바로 시작할 수 있는 후보는 아래 2개다.
 
-### Option A. Phase 1 착수
+### Option A. Phase 5 runtime shell
 
 목표:
 
-- `main.mjs`에서 아래 항목을 먼저 빼낸다.
+- React 앱 셸을 추가하고 기존 해시 라우트를 React 쪽으로 넘길 최소 부트스트랩을 만든다.
 
 대상:
 
-- `GAME_META`
-- `ASSESSMENT_STAGE_GAMES`
-- 포션 안내 copy
-- 라우트 helper
-- format 함수
+- `package.json`
+- `index.html`
+- `src/app/*` 또는 이에 준하는 새 앱 진입점
+- `src/web/main.mjs`
 
 장점:
 
-- 동작 변화가 거의 없다.
-- 안전하게 파일 분해를 시작할 수 있다.
+- 이후 Home / Results / Sequence를 React route로 옮길 기반이 바로 생긴다.
+- legacy 렌더러와 새 React 셸의 공존 전략을 초기에 명확히 할 수 있다.
 
-### Option B. Phase 1 상세 설계 먼저
+### Option B. Phase 6 static route spike
 
 목표:
 
-- shared module의 실제 파일명과 export 경계를 먼저 확정한다.
+- Home / Results / Sequence 중 하나를 먼저 React 컴포넌트로 옮길 최소 실험을 설계한다.
 
 대상:
 
-- `src/web/shared/game-meta.mjs`
-- `src/web/shared/routes.mjs`
-- `src/web/shared/formatters.mjs`
-- `src/web/shared/potion-content.mjs`
+- `src/web/pages/home-page.mjs`
+- `src/web/pages/results-page.mjs`
+- `src/web/pages/sequence-page.mjs`
+- 새 React page/component 파일
 
 장점:
 
-- 다음 구현 세션의 토큰 사용량을 줄일 수 있다.
-- 수정 범위를 더 좁게 가져갈 수 있다.
+- React 셸 도입 직후 바로 low-risk route를 옮기는 기준을 선행 검토할 수 있다.
+- 정적 페이지를 먼저 전환할 때 필요한 prop/data 경계가 보인다.
 
 ## Recommended Next Action
 
-현재 기준 추천은 `Option B -> Option A` 순서다.
+현재 기준 추천은 `Option A를 먼저 시작`하는 것이다.
 
 즉, 다음 세션 첫 작업은 아래다.
 
-1. Phase 1용 모듈 경계 확정
-2. 그 다음 `main.mjs`에서 메타/포맷/상수 분리 시작
+1. React/Vite/HashRouter 셸을 추가한다.
+2. legacy `main.mjs`가 React 부트스트랩 또는 fallback renderer만 담당하도록 첫 경계를 만든다.
 
 ## Blocked / Deferred Items
 
@@ -143,12 +158,16 @@
 
 ## Handoff Snapshot
 
-- Last stable stopping point: `planning docs added, implementation not started`
+- Last stable stopping point: `Phase 4 complete; main.mjs reduced to 289 lines and potion engine unified behind src/games/potion`
 - Next file(s) to open:
   [react-migration-plan.md](/Users/namucy/Develop/ai-test-mocking/docs/react-migration-plan.md),
   [react-migration-log.md](/Users/namucy/Develop/ai-test-mocking/docs/react-migration-log.md),
-  [main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1)
-- Next first action: `Phase 1 shared module 경계 확정`
+  [package.json](/Users/namucy/Develop/ai-test-mocking/package.json:1),
+  [main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1),
+  [src/web/potion-engine.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion-engine.mjs:1),
+  [src/games/potion/index.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/index.js:1),
+  [src/web/pages/home-controller.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/pages/home-controller.mjs:1)
+- Next first action: `React/Vite/HashRouter 런타임 셸을 추가하고 legacy main.mjs와의 공존 부트 경계를 잡기`
 - If resuming after interruption:
   `Working Checklist`에서 진행 중 항목을 확인하고,
   막힌 이력이 있으면 `Blocked / Deferred Items`를 먼저 본다.
@@ -163,6 +182,22 @@
 - 포션 게임 로직이 브라우저용과 테스트용으로 이중화돼 있다는 점을 핵심 구조 리스크로 기록했다.
 - React 전환은 즉시 도입보다 `사전 분해 -> 엔진 단일화 -> React 셸 도입` 순서가 적절하다고 결정했다.
 - 본 계획 문서와 진행 로그 문서를 추가했다.
+- [src/web/shared/game-meta.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/shared/game-meta.mjs:1), [routes.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/shared/routes.mjs:1), [formatters.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/shared/formatters.mjs:1), [potion-content.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/shared/potion-content.mjs:1) 를 추가해 Phase 1 대상이던 메타/라우트/포맷터/포션 copy를 `main.mjs` 밖으로 이동했다.
+- [src/web/components/top-nav.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/components/top-nav.mjs:1), [home-page.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/pages/home-page.mjs:1), [results-page.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/pages/results-page.mjs:1), [sequence-page.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/pages/sequence-page.mjs:1) 를 추가해 Phase 2 대상이던 문자열 page renderer를 분리했다.
+- `tests/web/potion-copy.test.mjs`는 extracted potion content 모듈을 직접 보도록 갱신했다.
+- `npm test`, `npm run check:web`를 통과했다.
+- `main.mjs`는 현재 약 `1918`줄까지 줄었고, 남은 큰 응집 구간은 포션 route state/controller/timer/render 쪽이다.
+- 포션 40문항 종료 후 결과 페이지 이동이 너무 숨겨져 오작동처럼 보이던 문제를 보정했다. 완료 카드는 유지하되 자동으로 `/results`로 이동하고, 버튼 문구도 `연습 기록 보기`로 명확하게 바꿨다.
+- 마지막 문항 종료 플로우도 다시 맞췄다. 이제 마지막 답 선택 후에도 일반 문항과 동일하게 피드백 단계가 먼저 보이고, 그 다음 완료 카드가 나온 뒤 결과 페이지로 이동한다.
+- [src/web/potion/state.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/state.mjs:1), [controller.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/controller.mjs:1), [timers.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/timers.mjs:1), [renderers.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/renderers.mjs:1) 를 추가해 Phase 3의 핵심 목표였던 포션 전용 state/controller/timer/render 경계를 `main.mjs` 밖으로 분리했다.
+- [src/web/main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1) 는 현재 약 `633`줄까지 줄었고, 포션 로직 대부분은 새 모듈을 조립하는 역할만 남았다.
+- `shouldResetPotionStateOnEntry`는 [src/web/potion/state.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/state.mjs:1) 로 이동했고, 기존 테스트 호환을 위해 [src/web/main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1) 에서 re-export 했다.
+- 다시 `npm test`, `npm run check:web`를 통과했다.
+- [src/web/pages/home-controller.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/pages/home-controller.mjs:1), [src/web/components/assessment-stage-art.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/components/assessment-stage-art.mjs:1) 를 추가해 home detail drawer 상태/glue와 stage icon/artwork를 [src/web/main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1) 밖으로 이동했다.
+- potion pointer hover 추적도 [src/web/potion/controller.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion/controller.mjs:1) 내부로 이동해 [src/web/main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1) 는 현재 약 `289`줄까지 줄었다.
+- [package.json](/Users/namucy/Develop/ai-test-mocking/package.json:1) 에 `"type": "module"` 을 추가하고 [src/games/potion/index.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/index.js:1), [config.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/config.js:1), [combo.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/combo.js:1), [session.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/session.js:1), [scoring.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/scoring.js:1) 를 ESM 단일 소스로 정리했다.
+- [src/web/potion-engine.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/potion-engine.mjs:1) 는 이제 [src/games/potion/index.js](/Users/namucy/Develop/ai-test-mocking/src/games/potion/index.js:1) 를 재-export하는 thin wrapper만 담당한다.
+- [tests/potion/scoring.test.js](/Users/namucy/Develop/ai-test-mocking/tests/potion/scoring.test.js:1), [tests/potion/session.test.js](/Users/namucy/Develop/ai-test-mocking/tests/potion/session.test.js:1) 를 ESM import로 바꿨고, 다시 `npm test`, `npm run check:web`를 통과했다.
 
 ## Agent Note
 

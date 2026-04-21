@@ -1,7 +1,7 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
+import test from "node:test";
+import assert from "node:assert/strict";
 
-const {
+import {
   createPotionDominantColorMap,
   createPotionQuestionPlan,
   createPotionGameConfig,
@@ -10,7 +10,7 @@ const {
   samplePotionActualColor,
   submitPotionAnswer,
   timeoutPotionQuestion,
-} = require("../../src/games/potion");
+} from "../../src/games/potion/index.js";
 
 test("dominant colors are assigned per combo using the provided rng", () => {
   const comboCatalog = [{ id: "A" }, { id: "B" }, { id: "C" }];

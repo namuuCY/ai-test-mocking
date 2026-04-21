@@ -1,15 +1,15 @@
-const {
+import {
   DEFAULT_POTION_GAME_CONFIG,
   validatePotionGameConfig,
-} = require("./config");
-const { buildPotionComboCatalog } = require("./combo");
-const {
+} from "./config.js";
+import { buildPotionComboCatalog } from "./combo.js";
+import {
   getPotionSpeedBandScore,
   getPotionVisibleResult,
   scorePotionPracticeSession,
-} = require("./scoring");
+} from "./scoring.js";
 
-function createPotionSession(options = {}) {
+export function createPotionSession(options = {}) {
   const config = options.config ?? DEFAULT_POTION_GAME_CONFIG;
   validatePotionGameConfig(config);
 
@@ -50,7 +50,7 @@ function createPotionSession(options = {}) {
   };
 }
 
-function createPotionDominantColorMap(comboCatalog, rng = Math.random) {
+export function createPotionDominantColorMap(comboCatalog, rng = Math.random) {
   const normalizedComboCatalog = normalizeComboCatalog(comboCatalog);
   const dominantColorByComboId = {};
 
@@ -61,7 +61,7 @@ function createPotionDominantColorMap(comboCatalog, rng = Math.random) {
   return dominantColorByComboId;
 }
 
-function createPotionQuestionPlan(
+export function createPotionQuestionPlan(
   comboCatalog,
   questionCount = DEFAULT_POTION_GAME_CONFIG.sessionQuestionCount,
   options = {},
@@ -92,7 +92,7 @@ function createPotionQuestionPlan(
   }));
 }
 
-function getPotionCurrentQuestion(session) {
+export function getPotionCurrentQuestion(session) {
   validatePotionSession(session);
 
   if (session.status === "finished") {
@@ -112,7 +112,7 @@ function getPotionCurrentQuestion(session) {
   };
 }
 
-function submitPotionAnswer(session, answer = {}, options = {}) {
+export function submitPotionAnswer(session, answer = {}, options = {}) {
   validatePotionSession(session);
 
   if (session.status === "finished") {
@@ -187,7 +187,7 @@ function submitPotionAnswer(session, answer = {}, options = {}) {
   };
 }
 
-function timeoutPotionQuestion(session, options = {}) {
+export function timeoutPotionQuestion(session, options = {}) {
   return submitPotionAnswer(
     session,
     {
@@ -199,7 +199,7 @@ function timeoutPotionQuestion(session, options = {}) {
   );
 }
 
-function samplePotionActualColor(
+export function samplePotionActualColor(
   dominantColor,
   config = DEFAULT_POTION_GAME_CONFIG,
   rng = Math.random,
@@ -352,13 +352,3 @@ function assertPositiveInteger(value, fieldName) {
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
-
-module.exports = {
-  createPotionDominantColorMap,
-  createPotionQuestionPlan,
-  createPotionSession,
-  getPotionCurrentQuestion,
-  samplePotionActualColor,
-  submitPotionAnswer,
-  timeoutPotionQuestion,
-};

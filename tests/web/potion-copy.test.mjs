@@ -2,10 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  getPotionStageDetailContent,
   POTION_SETTING_DEFINITIONS,
-  shouldResetPotionStateOnEntry,
-} from "../../src/web/main.mjs";
+  getPotionStageDetailContent,
+} from "../../src/web/shared/potion-content.mjs";
+import { shouldResetPotionStateOnEntry } from "../../src/web/main.mjs";
 
 test("potion stage drawer copy hides dominant-probability wording", () => {
   const detailContent = getPotionStageDetailContent({
