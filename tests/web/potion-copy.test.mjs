@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   getPotionStageDetailContent,
   POTION_SETTING_DEFINITIONS,
+  shouldResetPotionStateOnEntry,
 } from "../../src/web/main.mjs";
 
 test("potion stage drawer copy hides dominant-probability wording", () => {
@@ -35,4 +36,13 @@ test("potion stage drawer copy hides dominant-probability wording", () => {
   const drawerText = JSON.stringify(detailContent);
   assert.equal(drawerText.includes("우세 확률"), false);
   assert.equal(drawerText.includes("현재 문항 수 기준"), false);
+});
+
+test("potion entry resets finished sessions but preserves active sessions unless explicitly restarted", () => {
+  assert.equal(shouldResetPotionStateOnEntry(undefined, "finished"), true);
+  assert.equal(shouldResetPotionStateOnEntry("auto", "finished"), true);
+  assert.equal(shouldResetPotionStateOnEntry("auto", "tutorial"), false);
+  assert.equal(shouldResetPotionStateOnEntry("auto", "playing"), false);
+  assert.equal(shouldResetPotionStateOnEntry("auto", "checking"), false);
+  assert.equal(shouldResetPotionStateOnEntry("fresh", "playing"), true);
 });

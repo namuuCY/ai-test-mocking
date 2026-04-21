@@ -261,6 +261,19 @@ function normalizePotionSettingValue(settingKey, rawValue, fallbackValue) {
   return clamp(Math.round(numericValue), definition.min, definition.max);
 }
 
+function normalizePotionEntryMode(entryMode) {
+  return entryMode === "fresh" ? "fresh" : "auto";
+}
+
+export function shouldResetPotionStateOnEntry(entryMode, phase) {
+  const normalizedEntryMode = normalizePotionEntryMode(entryMode);
+  if (normalizedEntryMode === "fresh") {
+    return true;
+  }
+
+  return phase === "finished";
+}
+
 function createPotionViewState(options = {}) {
   const settings = normalizePotionSettings(
     options.settings ?? createDefaultPotionSettings(),
@@ -357,7 +370,11 @@ function handleRootClick(event) {
     case "navigate": {
       const route = actionElement.dataset.route;
       if (route) {
-        navigate(route);
+        if (route === GAME_META.potion.route) {
+          enterPotionGame(actionElement.dataset.entryMode);
+        } else {
+          navigate(route);
+        }
       }
       break;
     }
@@ -383,7 +400,11 @@ function handleRootClick(event) {
       const route = actionElement.dataset.route;
       if (route) {
         closeHomeStageDetail({ shouldRender: false });
-        navigate(route);
+        if (route === GAME_META.potion.route) {
+          enterPotionGame("fresh");
+        } else {
+          navigate(route);
+        }
       }
       break;
     }
@@ -392,7 +413,7 @@ function handleRootClick(event) {
       break;
     }
     case "restart-potion": {
-      resetPotionExperience();
+      enterPotionGame("fresh");
       break;
     }
     case "abort-potion-session": {
@@ -919,7 +940,21 @@ function persistPotionResult() {
   state.potion.savedResultId = session.id;
 }
 
-function resetPotionExperience() {
+function enterPotionGame(entryMode = "auto") {
+  if (shouldResetPotionStateOnEntry(entryMode, state.potion.phase)) {
+    resetPotionExperience({ shouldRender: false });
+  }
+
+  if (state.route === GAME_META.potion.route) {
+    ensurePotionLoopForCurrentState();
+    renderApp();
+    return;
+  }
+
+  navigate(GAME_META.potion.route);
+}
+
+function resetPotionExperience({ shouldRender = true } = {}) {
   clearIntroTimers();
   clearQuestionTimers();
   clearFeedbackTimer();
@@ -929,7 +964,9 @@ function resetPotionExperience() {
   });
 
   ensurePotionLoopForCurrentState();
-  renderApp();
+  if (shouldRender) {
+    renderApp();
+  }
 }
 
 function abortPotionSession() {
