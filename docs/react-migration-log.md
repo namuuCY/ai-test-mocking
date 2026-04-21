@@ -11,6 +11,9 @@
 - 다음 세션에서는 먼저 계획 문서를 읽고, 바로 이 로그를 읽는다.
 - 작업이 끝날 때마다 최소한 `현재 phase`, `완료 항목`, `다음 작업`을 갱신한다.
 - 긴 세션 메모를 채팅 히스토리에만 남기지 말고 이 문서에 압축해서 적는다.
+- 작업이 중간에 막히면 `Blocked / Deferred Items` 섹션에 원인과 다음 재개 조건을 남긴다.
+- 작업을 다음 세션으로 넘기면 `Handoff Snapshot` 섹션에 `어디까지 했는지`, `다음 파일`, `다음 첫 액션`을 남긴다.
+- phase 체크리스트 외에 세부 작업이 생기면 `Working Checklist` 섹션에 하위 체크리스트를 추가한다.
 
 ## Current Status
 
@@ -36,6 +39,18 @@
 - [ ] Phase 6. Home / Results / Sequence React 전환
 - [ ] Phase 7. Potion React 전환
 - [ ] Phase 8. Legacy renderer 정리
+
+## Working Checklist
+
+이 섹션은 phase 체크리스트보다 더 작은 작업 단위를 누적하는 곳이다.
+
+현재 활성 작업:
+
+- [ ] Phase 1 shared module 경계 확정
+- [ ] `GAME_META` / `ASSESSMENT_STAGE_GAMES` 분리 설계
+- [ ] format 함수 묶음 분리 설계
+- [ ] 포션 안내 copy 상수 분리 설계
+- [ ] `main.mjs`에서 첫 extraction 대상 줄 범위 확정
 
 ## Current Decisions
 
@@ -109,6 +124,35 @@
 1. Phase 1용 모듈 경계 확정
 2. 그 다음 `main.mjs`에서 메타/포맷/상수 분리 시작
 
+## Blocked / Deferred Items
+
+현재 없음.
+
+이후 막히는 항목은 아래 형식으로 추가한다.
+
+```md
+### YYYY-MM-DD - short title
+
+- Status: `blocked` | `deferred`
+- Phase: `...`
+- Reason: `무엇 때문에 멈췄는지`
+- Last completed point: `여기까지는 끝남`
+- Next unblock action: `무엇이 해결되면 다시 시작 가능한지`
+- Relevant files: `...`
+```
+
+## Handoff Snapshot
+
+- Last stable stopping point: `planning docs added, implementation not started`
+- Next file(s) to open:
+  [react-migration-plan.md](/Users/namucy/Develop/ai-test-mocking/docs/react-migration-plan.md),
+  [react-migration-log.md](/Users/namucy/Develop/ai-test-mocking/docs/react-migration-log.md),
+  [main.mjs](/Users/namucy/Develop/ai-test-mocking/src/web/main.mjs:1)
+- Next first action: `Phase 1 shared module 경계 확정`
+- If resuming after interruption:
+  `Working Checklist`에서 진행 중 항목을 확인하고,
+  막힌 이력이 있으면 `Blocked / Deferred Items`를 먼저 본다.
+
 ## Session Log
 
 ### 2026-04-21
@@ -144,4 +188,16 @@ agent 사용을 고려할 시점:
 - Current phase: `...`
 - Overall status: `...`
 - Immediate next action: `...`
+```
+
+막히거나 다음 세션으로 넘길 때는 아래 템플릿을 사용한다.
+
+```md
+### Handoff - YYYY-MM-DD
+
+- Done in this session: `...`
+- Not done yet: `...`
+- Next first action: `...`
+- Open these files first: `...`
+- Notes / blockers: `...`
 ```
